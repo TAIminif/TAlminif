@@ -1,0 +1,51 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  moonc3d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official stable MoonBit toolchain
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o "$RUNNER_TEMP/install-moonbit.sh"
+          bash "$RUNNER_TEMP/install-moonbit.sh"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Record versions and check formatting
+        run: |
+          moon version
+          moonc -v
+          moon fmt --check
+      - name: Check build and test all core backends
+        run: |
+          moon check --deny-warn
+          moon build
+          moon test --target wasm-gc
+          moon test --target wasm
+          moon test --target js
+          moon test --target native
+          moon build --target js --release
+          moon run examples/memory
+      - name: Independent C3D interoperability
+        run: |
+          python -m pip install -r requirements-test.txt
+          python scripts/interop.py
+          python scripts/count_code.py > artifacts/code-count.json
+      - name: Save verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c3d-verification
+          path: artifacts/
+          if-no-files-found: ignore

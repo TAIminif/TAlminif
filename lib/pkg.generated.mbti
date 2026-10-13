@@ -1,0 +1,434 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "TAIminif/TAlminif/lib"
+
+import {
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn analog_csv(Reader, maximum_bytes? : Int) -> String raise C3dError
+
+pub fn analyze(Reader) -> TrialSummary raise C3dError
+
+pub fn ascii(Bytes) -> String raise C3dError
+
+pub fn ascii_bytes(String) -> Bytes raise C3dError
+
+pub fn channel_json(Channel) -> Json
+
+pub fn check(Reader, scan_frames? : Bool) -> Report raise C3dError
+
+pub fn check_json_nesting(String, Int) -> Unit raise C3dError
+
+pub fn check_range(Bytes, Int, Int) -> Unit raise C3dError
+
+pub fn checked_add(Int, Int, String) -> Int raise C3dError
+
+pub fn checked_mul(Int, Int, String) -> Int raise C3dError
+
+pub fn core_parameters(Parameters, Header, Array[String], Array[String], String, Array[Channel], Double, Bool, Int, Int) -> Parameters raise C3dError
+
+pub fn csv_field(String) -> String
+
+pub fn decode_frame(Bytes, Int, Layout, Int) -> Frame raise C3dError
+
+pub fn distribution_json(Distribution) -> Json
+
+pub fn document_json(Document) -> Json
+
+pub fn element_count(Array[Int]) -> Int raise C3dError
+
+pub fn element_size(Int) -> Int raise C3dError
+
+pub fn encode_frame(Frame, Layout) -> Bytes raise C3dError
+
+pub fn event_json(Event) -> Json
+
+pub fn events_csv(Reader, maximum_bytes? : Int) -> String raise C3dError
+
+pub fn exact_int(Double, Int, Int, String) -> Int raise C3dError
+
+pub fn f32(Bytes, Int) -> Double raise C3dError
+
+pub fn finite(Double) -> Bool
+
+pub fn frame_json(Frame) -> Json
+
+pub fn hex_bytes(Bytes) -> String
+
+pub fn i16(Bytes, Int) -> Int raise C3dError
+
+pub fn i8(Bytes, Int) -> Int raise C3dError
+
+pub fn import_json(String, limits? : Limits) -> Document raise C3dError
+
+pub fn inspect_json(Reader) -> Json
+
+pub fn invalid(String) -> C3dError
+
+pub fn json_array(Json) -> Array[Json] raise C3dError
+
+pub fn json_bool(Json) -> Bool raise C3dError
+
+pub fn json_field(Json, String) -> Json raise C3dError
+
+pub fn json_number(Json) -> Double raise C3dError
+
+pub fn json_optional(Json, String) -> Json? raise C3dError
+
+pub fn json_string(Json) -> String raise C3dError
+
+pub fn marker_json(Marker) -> Json
+
+pub fn normalize_name(String) -> String raise C3dError
+
+pub fn optional_number(Parameters, String, String, Double, unsigned? : Bool) -> Double raise C3dError
+
+pub fn optional_text(Parameters, String, String, String) -> String raise C3dError
+
+pub fn pad_to(@buffer.Buffer, Int) -> Unit raise C3dError
+
+pub fn parameters_json(Parameters) -> Json
+
+pub fn parse_channel_json(Json) -> Channel raise C3dError
+
+pub fn parse_document_json(Json, limits? : Limits) -> Document raise C3dError
+
+pub fn parse_event_json(Json) -> Event raise C3dError
+
+pub fn parse_hex(String, max_bytes? : Int) -> Bytes raise C3dError
+
+pub fn parse_marker_json(Json) -> Marker raise C3dError
+
+pub fn parse_parameters_json(Json, limits? : Limits) -> Parameters raise C3dError
+
+pub fn points_csv(Reader, maximum_bytes? : Int) -> String raise C3dError
+
+pub fn put_f32(@buffer.Buffer, Double) -> Unit raise C3dError
+
+pub fn put_i16(@buffer.Buffer, Int) -> Unit raise C3dError
+
+pub fn put_u16(@buffer.Buffer, Int) -> Unit raise C3dError
+
+pub fn read(Bytes, limits? : Limits) -> Document raise C3dError
+
+pub fn read_events(Header, Parameters) -> Array[Event] raise C3dError
+
+pub fn read_header(Bytes, limits? : Limits) -> Header raise C3dError
+
+pub fn read_header_events(Header) -> Array[Event] raise C3dError
+
+pub fn read_parameters(Bytes, Int, limits? : Limits) -> Parameters raise C3dError
+
+pub fn rebuild(Document, Array[Frame], Array[String], Array[String], Array[Channel], Int, Array[Event]) -> Document raise C3dError
+
+pub fn report_json(Report) -> Json
+
+pub fn resolve_frame_range(Header, Parameters, Limits) -> (Int, Int) raise C3dError
+
+pub fn resolve_layout(Header, Parameters, limits? : Limits) -> Layout raise C3dError
+
+pub fn round_int(Double, Int, Int, String) -> Int raise C3dError
+
+pub fn summary_json(TrialSummary) -> Json
+
+pub fn trial_frame(Parameters, String) -> Int? raise C3dError
+
+pub fn u16(Bytes, Int) -> Int raise C3dError
+
+pub fn u32(Bytes, Int) -> UInt raise C3dError
+
+pub fn u8(Bytes, Int) -> Int raise C3dError
+
+pub fn utf8_bytes(String) -> Bytes
+
+pub fn utf8_text(Bytes) -> String raise C3dError
+
+pub fn validate_document(Document, limits? : Limits) -> Unit raise C3dError
+
+pub fn validate_frame(Frame, Layout) -> Unit raise C3dError
+
+pub fn validate_header(Header, limits? : Limits) -> Unit raise C3dError
+
+pub fn validate_limits(Limits) -> Unit raise C3dError
+
+pub fn validate_parameter(Parameter, limits? : Limits) -> Unit raise C3dError
+
+pub fn validate_parameters(Parameters, limits? : Limits) -> Unit raise C3dError
+
+pub fn write(Document, limits? : Limits) -> Bytes raise C3dError
+
+pub fn write_event_parameters(Parameters, Array[Event]) -> Parameters raise C3dError
+
+pub fn write_header(Header, limits? : Limits) -> Bytes raise C3dError
+
+pub fn write_parameters(Parameters, limits? : Limits) -> Bytes raise C3dError
+
+// Errors
+pub suberror C3dError {
+  Invalid(String)
+  Truncated(String)
+  Unsupported(String)
+  ResourceLimit(String)
+} derive(@debug.Debug)
+pub fn C3dError::kind(Self) -> String
+pub fn C3dError::message(Self) -> String
+
+// Types and methods
+pub(all) struct AnalogSummary {
+  label : String
+  unit : String
+  samples : Distribution
+} derive(Eq, @debug.Debug)
+
+pub struct Analyzer {
+  layout : Layout
+  markers : Array[MarkerMoments]
+  analog : Array[Moments]
+  mut frames : Int
+}
+pub fn Analyzer::add(Self, Frame) -> Unit raise C3dError
+pub fn Analyzer::finish(Self) -> TrialSummary
+pub fn Analyzer::new(Layout) -> Self
+
+pub(all) struct Channel {
+  label : String
+  description : String
+  unit : String
+  scale : Double
+  offset : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Diagnostic {
+  severity : Severity
+  code : String
+  location : String
+  message : String
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Distribution {
+  count : Int
+  minimum : Double
+  maximum : Double
+  mean : Double
+  variance : Double
+  rms : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Document {
+  header : Header
+  parameters : Parameters
+  layout : Layout
+  frames : Array[Frame]
+  events : Array[Event]
+} derive(Eq, @debug.Debug)
+pub fn Document::convert_storage(Self, Double, unsigned? : Bool) -> Self raise C3dError
+pub fn Document::crop(Self, Int, Int, rebase? : Bool) -> Self raise C3dError
+pub fn Document::crop_time(Self, Double, Double, rebase? : Bool) -> Self raise C3dError
+pub fn Document::new(Array[String], Array[Channel], Array[Frame], point_rate? : Double, scale? : Double, analog_subsamples? : Int, analog_global_scale? : Double, analog_unsigned? : Bool, point_unit? : String) -> Self raise C3dError
+pub fn Document::rename_analog(Self, Int, String) -> Self raise C3dError
+pub fn Document::rename_point(Self, Int, String) -> Self raise C3dError
+pub fn Document::replace_frame(Self, Int, Frame) -> Self raise C3dError
+pub fn Document::select_analog(Self, Array[Int]) -> Self raise C3dError
+pub fn Document::select_analog_by_label(Self, Array[String]) -> Self raise C3dError
+pub fn Document::select_points(Self, Array[Int]) -> Self raise C3dError
+pub fn Document::select_points_by_label(Self, Array[String]) -> Self raise C3dError
+pub fn Document::with_events(Self, Array[Event]) -> Self raise C3dError
+
+pub(all) struct Event {
+  time : Double
+  label : String
+  context : String
+  description : String
+  subject : String
+  icon_id : Int
+  generic : Bool
+} derive(Eq, @debug.Debug)
+pub fn Event::new(Double, String) -> Self
+
+pub(all) struct Frame {
+  number : Int
+  points : Array[Marker]
+  analog : Array[Array[Double]]
+} derive(Eq, @debug.Debug)
+pub fn Frame::camera_count(Self, Int) -> Int raise C3dError
+
+pub(all) struct Group {
+  id : Int
+  name : String
+  description : Bytes
+  locked : Bool
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Header {
+  parameter_block : Int
+  point_count : Int
+  analog_values_per_frame : Int
+  first_frame : Int
+  last_frame : Int
+  max_gap : Int
+  scale : Double
+  data_block : Int
+  analog_subsamples : Int
+  point_rate : Double
+  reserved : Bytes
+} derive(Eq, @debug.Debug)
+pub fn Header::new(Int, Double, scale? : Double) -> Self
+
+pub(all) struct Layout {
+  frame_count : Int
+  first_frame : Int
+  point_count : Int
+  point_rate : Double
+  point_scale : Double
+  point_labels : Array[String]
+  point_descriptions : Array[String]
+  point_unit : String
+  analog_channels : Array[Channel]
+  analog_subsamples : Int
+  analog_rate : Double
+  analog_global_scale : Double
+  analog_unsigned : Bool
+  float_storage : Bool
+  frame_bytes : Int
+  data_offset : Int
+} derive(Eq, @debug.Debug)
+pub fn Layout::index_at(Self, Double) -> Int raise C3dError
+pub fn Layout::time_at(Self, Int, subsample? : Int) -> Double raise C3dError
+
+pub(all) struct Limits {
+  max_file_bytes : Int
+  max_parameters : Int
+  max_parameter_bytes : Int
+  max_frames : Int
+  max_points : Int
+  max_analog_channels : Int
+  max_subsamples : Int
+  max_total_values : Int
+  max_text_bytes : Int
+} derive(Eq, @debug.Debug)
+pub fn Limits::default() -> Self
+
+pub(all) struct Marker {
+  x : Double
+  y : Double
+  z : Double
+  residual : Double
+  cameras : Int
+  valid : Bool
+} derive(Eq, @debug.Debug)
+pub fn Marker::missing() -> Self
+pub fn Marker::new(Double, Double, Double) -> Self
+
+type MarkerMoments
+
+pub(all) struct MarkerSummary {
+  label : String
+  valid_samples : Int
+  missing_samples : Int
+  longest_missing_run : Int
+  x : Distribution
+  y : Distribution
+  z : Distribution
+  residual : Distribution
+} derive(Eq, @debug.Debug)
+
+pub struct Moments {
+  mut count : Int
+  mut minimum : Double
+  mut maximum : Double
+  mut mean : Double
+  mut m2 : Double
+  mut sum_squares : Double
+}
+pub fn Moments::add(Self, Double) -> Unit raise C3dError
+pub fn Moments::finish(Self) -> Distribution
+pub fn Moments::new() -> Self
+
+pub(all) struct Parameter {
+  group_id : Int
+  name : String
+  data_type : Int
+  dimensions : Array[Int]
+  data : Bytes
+  description : Bytes
+  locked : Bool
+} derive(Eq, @debug.Debug)
+pub fn Parameter::description_text(Self) -> String raise C3dError
+pub fn Parameter::int_values(Self, unsigned? : Bool) -> Array[Int] raise C3dError
+pub fn Parameter::integer(String, Int) -> Self raise C3dError
+pub fn Parameter::integers(String, Array[Int], dimensions? : Array[Int]) -> Self raise C3dError
+pub fn Parameter::linear_index(Self, Array[Int]) -> Int raise C3dError
+pub fn Parameter::number(Self, unsigned? : Bool) -> Double raise C3dError
+pub fn Parameter::real(String, Double) -> Self raise C3dError
+pub fn Parameter::real_values(Self) -> Array[Double] raise C3dError
+pub fn Parameter::reals(String, Array[Double], dimensions? : Array[Int]) -> Self raise C3dError
+pub fn Parameter::text(String, String) -> Self raise C3dError
+pub fn Parameter::text_values(Self) -> Array[String] raise C3dError
+pub fn Parameter::texts(String, Array[String]) -> Self raise C3dError
+pub fn Parameter::unsigned(String, Int) -> Self raise C3dError
+pub fn Parameter::unsigneds(String, Array[Int], dimensions? : Array[Int]) -> Self raise C3dError
+
+pub(all) struct Parameters {
+  groups : Array[Group]
+  values : Array[Parameter]
+} derive(Eq, @debug.Debug)
+pub fn Parameters::add_group(Self, String, description? : String, locked? : Bool) -> Self raise C3dError
+pub fn Parameters::empty() -> Self
+pub fn Parameters::get(Self, String, String) -> Parameter? raise C3dError
+pub fn Parameters::group(Self, String) -> Group? raise C3dError
+pub fn Parameters::put_int(Self, String, String, Int, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_ints(Self, String, String, Array[Int], override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_real(Self, String, String, Double, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_reals(Self, String, String, Array[Double], override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_text(Self, String, String, String, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_texts(Self, String, String, Array[String], override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::remove(Self, String, String, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::require(Self, String, String) -> Parameter raise C3dError
+pub fn Parameters::set(Self, String, Parameter, override_locked? : Bool) -> Self raise C3dError
+
+pub struct Reader {
+  data : Bytes
+  header : Header
+  parameters : Parameters
+  layout : Layout
+  events : Array[Event]
+  mut position : Int
+}
+pub fn Reader::events(Self) -> Array[Event]
+pub fn Reader::frame(Self, Int) -> Frame raise C3dError
+pub fn Reader::header(Self) -> Header
+pub fn Reader::layout(Self) -> Layout
+pub fn Reader::new(Bytes, limits? : Limits) -> Self raise C3dError
+pub fn Reader::next(Self) -> Frame? raise C3dError
+pub fn Reader::parameters(Self) -> Parameters
+pub fn Reader::position(Self) -> Int
+pub fn Reader::read_batch(Self, Int) -> Array[Frame] raise C3dError
+pub fn Reader::remaining(Self) -> Int
+pub fn Reader::seek(Self, Int) -> Unit raise C3dError
+pub fn Reader::to_document(Self) -> Document raise C3dError
+
+pub(all) struct Report {
+  diagnostics : Array[Diagnostic]
+} derive(Eq, @debug.Debug)
+pub fn Report::has_errors(Self) -> Bool
+
+pub(all) enum Severity {
+  Warning
+  Error
+} derive(Eq, @debug.Debug)
+
+pub(all) struct TrialSummary {
+  frames : Int
+  point_rate : Double
+  analog_rate : Double
+  first_frame : Int
+  duration : Double
+  markers : Array[MarkerSummary]
+  analog : Array[AnalogSummary]
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
