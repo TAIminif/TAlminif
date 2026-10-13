@@ -262,7 +262,12 @@ fn labels_or_default(
   prefix : String,
 ) -> Array[String] raise C3dError {
   match parameters.get(group, name) {
-    None => Array::makei(count, i => "\{prefix}\{i + 1}")
+    None =>
+      if prefix == "" {
+        Array::make(count, "")
+      } else {
+        Array::makei(count, i => "\{prefix}\{i + 1}")
+      }
     Some(value) => {
       let labels = value.text_values()
       if labels.length() < count {
