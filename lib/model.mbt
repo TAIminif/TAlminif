@@ -7,6 +7,24 @@ pub suberror C3dError {
 } derive(Debug)
 
 ///|
+pub fn C3dError::message(self : C3dError) -> String {
+  match self {
+    Invalid(text) | Truncated(text) | Unsupported(text) | ResourceLimit(text) =>
+      text
+  }
+}
+
+///|
+pub fn C3dError::kind(self : C3dError) -> String {
+  match self {
+    Invalid(_) => "invalid"
+    Truncated(_) => "truncated"
+    Unsupported(_) => "unsupported"
+    ResourceLimit(_) => "resource_limit"
+  }
+}
+
+///|
 pub(all) struct Limits {
   max_file_bytes : Int
   max_parameters : Int
