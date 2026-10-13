@@ -3,7 +3,7 @@ pub fn normalize_name(name : String) -> String raise C3dError {
   if name.length() < 1 || name.length() > 127 {
     raise C3dError::Invalid("parameter name length must be 1..127")
   }
-  let result = StringBuilder::new()
+  let result = StringBuilder()
   for char in name.iter() {
     let code = char.to_int()
     let upper = if code >= 97 && code <= 122 { code - 32 } else { code }
@@ -20,7 +20,7 @@ pub fn normalize_name(name : String) -> String raise C3dError {
 }
 
 ///|
-pub fn element_size(data_type : Int) -> Int raise C3dError {
+pub fn element_size(data_type : Int32) -> Int32 raise C3dError {
   match data_type {
     -1 | 1 => 1
     2 => 2
@@ -30,7 +30,7 @@ pub fn element_size(data_type : Int) -> Int raise C3dError {
 }
 
 ///|
-pub fn element_count(dimensions : Array[Int]) -> Int raise C3dError {
+pub fn element_count(dimensions : Array[Int32]) -> Int32 raise C3dError {
   if dimensions.length() > 7 {
     raise C3dError::Invalid("parameter has more than seven dimensions")
   }
@@ -47,7 +47,7 @@ pub fn element_count(dimensions : Array[Int]) -> Int raise C3dError {
 ///|
 pub fn validate_parameter(
   value : Parameter,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Unit raise C3dError {
   let _ = normalize_name(value.name)
   if value.group_id < 1 || value.group_id > 127 {
@@ -72,14 +72,14 @@ pub fn validate_parameter(
 ///|
 pub fn validate_parameters(
   parameters : Parameters,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Unit raise C3dError {
   validate_limits(limits)
   if parameters.groups.length() > 127 ||
     parameters.values.length() > limits.max_parameters {
     raise C3dError::ResourceLimit("too many groups or parameters")
   }
-  let ids : Map[Int, Bool] = Map([])
+  let ids : Map[Int32, Bool] = Map([])
   let names : Map[String, Bool] = Map([])
   let keys : Map[String, Bool] = Map([])
   let mut bytes = 0
@@ -122,8 +122,8 @@ pub fn validate_parameters(
 ///|
 pub fn read_parameters(
   data : Bytes,
-  parameter_block : Int,
-  limits? : Limits = Limits::default(),
+  parameter_block : Int32,
+  limits~ : Limits = Limits::default(),
 ) -> Parameters raise C3dError {
   validate_limits(limits)
   if parameter_block < 2 || parameter_block > 255 {
@@ -201,7 +201,7 @@ pub fn read_parameters(
         raise C3dError::Invalid("invalid parameter rank")
       }
       payload = payload + 2
-      let dimensions : Array[Int] = []
+      let dimensions : Array[Int32] = []
       for _ in 0..<rank {
         dimensions.push(u8(data, payload))
         payload = payload + 1
@@ -240,7 +240,7 @@ pub fn read_parameters(
     }
     cursor = record_end
   }
-  let result = { groups, values }
+  let result = { groups, values, }
   validate_parameters(result, limits~)
   result
 }
@@ -248,7 +248,7 @@ pub fn read_parameters(
 ///|
 fn encode_record(
   name : String,
-  group_id : Int,
+  group_id : Int32,
   locked : Bool,
   payload : Bytes,
 ) -> Bytes raise C3dError {
@@ -268,7 +268,7 @@ fn encode_record(
 ///|
 pub fn write_parameters(
   parameters : Parameters,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Bytes raise C3dError {
   validate_parameters(parameters, limits~)
   let records = @buffer.Buffer::Buffer()

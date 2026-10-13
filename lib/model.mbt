@@ -32,15 +32,15 @@ pub fn C3dError::kind(self : C3dError) -> String {
 
 ///|
 pub(all) struct Limits {
-  max_file_bytes : Int
-  max_parameters : Int
-  max_parameter_bytes : Int
-  max_frames : Int
-  max_points : Int
-  max_analog_channels : Int
-  max_subsamples : Int
-  max_total_values : Int
-  max_text_bytes : Int
+  max_file_bytes : Int32
+  max_parameters : Int32
+  max_parameter_bytes : Int32
+  max_frames : Int32
+  max_points : Int32
+  max_analog_channels : Int32
+  max_subsamples : Int32
+  max_total_values : Int32
+  max_text_bytes : Int32
 } derive(Debug, Eq)
 
 ///|
@@ -60,22 +60,22 @@ pub fn Limits::default() -> Limits {
 
 ///|
 pub(all) struct Header {
-  parameter_block : Int
-  point_count : Int
-  analog_values_per_frame : Int
-  first_frame : Int
-  last_frame : Int
-  max_gap : Int
+  parameter_block : Int32
+  point_count : Int32
+  analog_values_per_frame : Int32
+  first_frame : Int32
+  last_frame : Int32
+  max_gap : Int32
   scale : Double
-  data_block : Int
-  analog_subsamples : Int
+  data_block : Int32
+  analog_subsamples : Int32
   point_rate : Double
   reserved : Bytes
 } derive(Debug, Eq)
 
 ///|
 pub(all) struct Group {
-  id : Int
+  id : Int32
   name : String
   description : Bytes
   locked : Bool
@@ -83,10 +83,10 @@ pub(all) struct Group {
 
 ///|
 pub(all) struct Parameter {
-  group_id : Int
+  group_id : Int32
   name : String
-  data_type : Int
-  dimensions : Array[Int]
+  data_type : Int32
+  dimensions : Array[Int32]
   data : Bytes
   description : Bytes
   locked : Bool
@@ -104,23 +104,23 @@ pub(all) struct Marker {
   y : Double
   z : Double
   residual : Double
-  cameras : Int
+  cameras : Int32
   valid : Bool
 } derive(Debug, Eq)
 
 ///|
 pub fn Marker::new(x : Double, y : Double, z : Double) -> Marker {
-  { x, y, z, residual: 0.0, cameras: 0, valid: true }
+  { x, y, z, residual: 0.0, cameras: 0, valid: true, }
 }
 
 ///|
 pub fn Marker::missing() -> Marker {
-  { x: 0.0, y: 0.0, z: 0.0, residual: -1.0, cameras: 0, valid: false }
+  { x: 0.0, y: 0.0, z: 0.0, residual: -1.0, cameras: 0, valid: false, }
 }
 
 ///|
 pub(all) struct Frame {
-  number : Int
+  number : Int32
   points : Array[Marker]
   analog : Array[Array[Double]]
 } derive(Debug, Eq)
@@ -132,7 +132,7 @@ pub(all) struct Event {
   context : String
   description : String
   subject : String
-  icon_id : Int
+  icon_id : Int32
   generic : Bool
 } derive(Debug, Eq)
 
@@ -160,22 +160,22 @@ pub(all) struct Channel {
 
 ///|
 pub(all) struct Layout {
-  frame_count : Int
-  first_frame : Int
-  point_count : Int
+  frame_count : Int32
+  first_frame : Int32
+  point_count : Int32
   point_rate : Double
   point_scale : Double
   point_labels : Array[String]
   point_descriptions : Array[String]
   point_unit : String
   analog_channels : Array[Channel]
-  analog_subsamples : Int
+  analog_subsamples : Int32
   analog_rate : Double
   analog_global_scale : Double
   analog_unsigned : Bool
   float_storage : Bool
-  frame_bytes : Int
-  data_offset : Int
+  frame_bytes : Int32
+  data_offset : Int32
 } derive(Debug, Eq)
 
 ///|

@@ -2,7 +2,6 @@ supported_targets = "js"
 
 import {
   "TAIminif/TAlminif/lib" @c3d,
-  "moonbitlang/core/json",
   "moonbitlang/core/string",
 }
 

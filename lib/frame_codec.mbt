@@ -1,9 +1,9 @@
 ///|
 pub fn decode_frame(
   data : Bytes,
-  offset : Int,
+  offset : Int32,
   layout : Layout,
-  index : Int,
+  index : Int32,
 ) -> Frame raise C3dError {
   if index < 0 || index >= layout.frame_count {
     raise C3dError::Invalid("frame index outside layout")
@@ -207,8 +207,8 @@ pub fn encode_frame(frame : Frame, layout : Layout) -> Bytes raise C3dError {
 ///|
 pub fn Layout::time_at(
   self : Layout,
-  index : Int,
-  subsample? : Int = 0,
+  index : Int32,
+  subsample~ : Int32 = 0,
 ) -> Double raise C3dError {
   if index < 0 || index >= self.frame_count {
     raise C3dError::Invalid("frame time index outside range")
@@ -227,7 +227,7 @@ pub fn Layout::time_at(
 }
 
 ///|
-pub fn Layout::index_at(self : Layout, time : Double) -> Int raise C3dError {
+pub fn Layout::index_at(self : Layout, time : Double) -> Int32 raise C3dError {
   if !finite(time) {
     raise C3dError::Invalid("non-finite time")
   }
@@ -242,8 +242,8 @@ pub fn Layout::index_at(self : Layout, time : Double) -> Int raise C3dError {
 ///|
 pub fn Frame::camera_count(
   self : Frame,
-  point_index : Int,
-) -> Int raise C3dError {
+  point_index : Int32,
+) -> Int32 raise C3dError {
   if point_index < 0 || point_index >= self.points.length() {
     raise C3dError::Invalid("marker index outside frame")
   }

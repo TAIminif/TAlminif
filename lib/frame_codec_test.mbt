@@ -1,5 +1,5 @@
 ///|
-fn frame_test_layout(float_storage : Bool) -> Layout {
+fn frame_test_layout(float_storage : Bool) -> @lib.Layout {
   {
     frame_count: 2,
     first_frame: 1,
@@ -14,7 +14,7 @@ fn frame_test_layout(float_storage : Bool) -> Layout {
     point_descriptions: [""],
     point_unit: "mm",
     analog_channels: [
-      { label: "A1", description: "", unit: "V", scale: 0.25, offset: 10.0 },
+      { label: "A1", description: "", unit: "V", scale: 0.25, offset: 10.0, },
     ],
     analog_subsamples: 2,
     analog_rate: 200.0,
@@ -34,7 +34,7 @@ fn frame_test_layout(float_storage : Bool) -> Layout {
 test "integer point and analog bytes match independent golden layout" {
   let layout = frame_test_layout(false)
   let raw = b"\x04\x00\xfc\xff\x06\x00\x03\x05\x0c\x00\x0e\x00"
-  let frame = decode_frame(raw, 0, layout, 0)
+  let frame = @lib.decode_frame(raw, 0, layout, 0)
   assert_eq(frame.points[0], {
     x: 2.0,
     y: -2.0,
@@ -45,7 +45,7 @@ test "integer point and analog bytes match independent golden layout" {
   })
   assert_eq(frame.analog, [[1.0, 2.0]])
   assert_eq(frame.camera_count(0), 2)
-  assert_eq(encode_frame(frame, layout), raw)
+  assert_eq(@lib.encode_frame(frame, layout), raw)
 }
 
 ///|
@@ -53,32 +53,35 @@ test "float marker residual word is numeric not bit reinterpretation" {
   let layout = frame_test_layout(true)
   let out = @buffer.Buffer::Buffer()
   for value in [1.25, 2.5, 3.75, 1283.0, 12.0, 14.0] {
-    put_f32(out, value)
+    @lib.put_f32(out, value)
   }
-  let frame = decode_frame(out.to_bytes(), 0, layout, 0)
+  let frame = @lib.decode_frame(out.to_bytes(), 0, layout, 0)
   assert_eq(frame.points[0].x, 1.25)
   assert_eq(frame.points[0].residual, 1.5)
   assert_eq(frame.points[0].cameras, 5)
   assert_eq(frame.analog, [[1.0, 2.0]])
-  assert_eq(encode_frame(frame, layout), out.to_bytes())
+  assert_eq(@lib.encode_frame(frame, layout), out.to_bytes())
 }
 
 ///|
 test "missing markers and narrowing errors" {
   let layout = frame_test_layout(false)
-  let frame : Frame = {
+  let frame : @lib.Frame = {
     number: 1,
-    points: [Marker::missing()],
+    points: [@lib.Marker::missing()],
     analog: [[0.0, 0.0]],
   }
   assert_false(
-    decode_frame(encode_frame(frame, layout), 0, layout, 0).points[0].valid,
+    @lib.decode_frame(@lib.encode_frame(frame, layout), 0, layout, 0).points[0].valid,
   )
   expect_error(() => {
-    encode_frame({ ..frame, points: [Marker::new(1.0e10, 0.0, 0.0)] }, layout)
+    @lib.encode_frame(
+      { ..frame, points: [@lib.Marker::new(1.0e10, 0.0, 0.0)], },
+      layout,
+    )
   })
-  expect_error(() => encode_frame({ ..frame, analog: [[]] }, layout))
-  expect_error(() => decode_frame(b"short", 0, layout, 0))
+  expect_error(() => @lib.encode_frame({ ..frame, analog: [[]], }, layout))
+  expect_error(() => @lib.decode_frame(b"short", 0, layout, 0))
 }
 
 ///|

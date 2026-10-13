@@ -174,6 +174,7 @@ pub suberror C3dError {
 } derive(@debug.Debug)
 pub fn C3dError::kind(Self) -> String
 pub fn C3dError::message(Self) -> String
+pub fn C3dError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
 pub(all) struct AnalogSummary {
@@ -181,6 +182,9 @@ pub(all) struct AnalogSummary {
   unit : String
   samples : Distribution
 } derive(Eq, @debug.Debug)
+pub fn AnalogSummary::equal(Self, Self) -> Bool
+pub fn AnalogSummary::not_equal(Self, Self) -> Bool
+pub fn AnalogSummary::to_repr(Self) -> @debug.Repr
 
 pub struct Analyzer {
   layout : Layout
@@ -199,6 +203,9 @@ pub(all) struct Channel {
   scale : Double
   offset : Double
 } derive(Eq, @debug.Debug)
+pub fn Channel::equal(Self, Self) -> Bool
+pub fn Channel::not_equal(Self, Self) -> Bool
+pub fn Channel::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Diagnostic {
   severity : Severity
@@ -206,6 +213,9 @@ pub(all) struct Diagnostic {
   location : String
   message : String
 } derive(Eq, @debug.Debug)
+pub fn Diagnostic::equal(Self, Self) -> Bool
+pub fn Diagnostic::not_equal(Self, Self) -> Bool
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Distribution {
   count : Int
@@ -215,6 +225,9 @@ pub(all) struct Distribution {
   variance : Double
   rms : Double
 } derive(Eq, @debug.Debug)
+pub fn Distribution::equal(Self, Self) -> Bool
+pub fn Distribution::not_equal(Self, Self) -> Bool
+pub fn Distribution::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Document {
   header : Header
@@ -226,7 +239,9 @@ pub(all) struct Document {
 pub fn Document::convert_storage(Self, Double, unsigned? : Bool) -> Self raise C3dError
 pub fn Document::crop(Self, Int, Int, rebase? : Bool) -> Self raise C3dError
 pub fn Document::crop_time(Self, Double, Double, rebase? : Bool) -> Self raise C3dError
+pub fn Document::equal(Self, Self) -> Bool
 pub fn Document::new(Array[String], Array[Channel], Array[Frame], point_rate? : Double, scale? : Double, analog_subsamples? : Int, analog_global_scale? : Double, analog_unsigned? : Bool, point_unit? : String) -> Self raise C3dError
+pub fn Document::not_equal(Self, Self) -> Bool
 pub fn Document::rename_analog(Self, Int, String) -> Self raise C3dError
 pub fn Document::rename_point(Self, Int, String) -> Self raise C3dError
 pub fn Document::replace_frame(Self, Int, Frame) -> Self raise C3dError
@@ -234,6 +249,7 @@ pub fn Document::select_analog(Self, Array[Int]) -> Self raise C3dError
 pub fn Document::select_analog_by_label(Self, Array[String]) -> Self raise C3dError
 pub fn Document::select_points(Self, Array[Int]) -> Self raise C3dError
 pub fn Document::select_points_by_label(Self, Array[String]) -> Self raise C3dError
+pub fn Document::to_repr(Self) -> @debug.Repr
 pub fn Document::with_events(Self, Array[Event]) -> Self raise C3dError
 
 pub(all) struct Event {
@@ -245,7 +261,10 @@ pub(all) struct Event {
   icon_id : Int
   generic : Bool
 } derive(Eq, @debug.Debug)
+pub fn Event::equal(Self, Self) -> Bool
 pub fn Event::new(Double, String) -> Self
+pub fn Event::not_equal(Self, Self) -> Bool
+pub fn Event::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Frame {
   number : Int
@@ -253,6 +272,9 @@ pub(all) struct Frame {
   analog : Array[Array[Double]]
 } derive(Eq, @debug.Debug)
 pub fn Frame::camera_count(Self, Int) -> Int raise C3dError
+pub fn Frame::equal(Self, Self) -> Bool
+pub fn Frame::not_equal(Self, Self) -> Bool
+pub fn Frame::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Group {
   id : Int
@@ -260,6 +282,9 @@ pub(all) struct Group {
   description : Bytes
   locked : Bool
 } derive(Eq, @debug.Debug)
+pub fn Group::equal(Self, Self) -> Bool
+pub fn Group::not_equal(Self, Self) -> Bool
+pub fn Group::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Header {
   parameter_block : Int
@@ -274,7 +299,10 @@ pub(all) struct Header {
   point_rate : Double
   reserved : Bytes
 } derive(Eq, @debug.Debug)
+pub fn Header::equal(Self, Self) -> Bool
 pub fn Header::new(Int, Double, scale? : Double) -> Self
+pub fn Header::not_equal(Self, Self) -> Bool
+pub fn Header::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Layout {
   frame_count : Int
@@ -294,8 +322,11 @@ pub(all) struct Layout {
   frame_bytes : Int
   data_offset : Int
 } derive(Eq, @debug.Debug)
+pub fn Layout::equal(Self, Self) -> Bool
 pub fn Layout::index_at(Self, Double) -> Int raise C3dError
+pub fn Layout::not_equal(Self, Self) -> Bool
 pub fn Layout::time_at(Self, Int, subsample? : Int) -> Double raise C3dError
+pub fn Layout::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Limits {
   max_file_bytes : Int
@@ -309,6 +340,9 @@ pub(all) struct Limits {
   max_text_bytes : Int
 } derive(Eq, @debug.Debug)
 pub fn Limits::default() -> Self
+pub fn Limits::equal(Self, Self) -> Bool
+pub fn Limits::not_equal(Self, Self) -> Bool
+pub fn Limits::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Marker {
   x : Double
@@ -318,8 +352,11 @@ pub(all) struct Marker {
   cameras : Int
   valid : Bool
 } derive(Eq, @debug.Debug)
+pub fn Marker::equal(Self, Self) -> Bool
 pub fn Marker::missing() -> Self
 pub fn Marker::new(Double, Double, Double) -> Self
+pub fn Marker::not_equal(Self, Self) -> Bool
+pub fn Marker::to_repr(Self) -> @debug.Repr
 
 type MarkerMoments
 
@@ -333,6 +370,9 @@ pub(all) struct MarkerSummary {
   z : Distribution
   residual : Distribution
 } derive(Eq, @debug.Debug)
+pub fn MarkerSummary::equal(Self, Self) -> Bool
+pub fn MarkerSummary::not_equal(Self, Self) -> Bool
+pub fn MarkerSummary::to_repr(Self) -> @debug.Repr
 
 pub struct Moments {
   mut count : Int
@@ -356,10 +396,12 @@ pub(all) struct Parameter {
   locked : Bool
 } derive(Eq, @debug.Debug)
 pub fn Parameter::description_text(Self) -> String raise C3dError
+pub fn Parameter::equal(Self, Self) -> Bool
 pub fn Parameter::int_values(Self, unsigned? : Bool) -> Array[Int] raise C3dError
 pub fn Parameter::integer(String, Int) -> Self raise C3dError
 pub fn Parameter::integers(String, Array[Int], dimensions? : Array[Int]) -> Self raise C3dError
 pub fn Parameter::linear_index(Self, Array[Int]) -> Int raise C3dError
+pub fn Parameter::not_equal(Self, Self) -> Bool
 pub fn Parameter::number(Self, unsigned? : Bool) -> Double raise C3dError
 pub fn Parameter::real(String, Double) -> Self raise C3dError
 pub fn Parameter::real_values(Self) -> Array[Double] raise C3dError
@@ -367,6 +409,7 @@ pub fn Parameter::reals(String, Array[Double], dimensions? : Array[Int]) -> Self
 pub fn Parameter::text(String, String) -> Self raise C3dError
 pub fn Parameter::text_values(Self) -> Array[String] raise C3dError
 pub fn Parameter::texts(String, Array[String]) -> Self raise C3dError
+pub fn Parameter::to_repr(Self) -> @debug.Repr
 pub fn Parameter::unsigned(String, Int) -> Self raise C3dError
 pub fn Parameter::unsigneds(String, Array[Int], dimensions? : Array[Int]) -> Self raise C3dError
 
@@ -376,8 +419,10 @@ pub(all) struct Parameters {
 } derive(Eq, @debug.Debug)
 pub fn Parameters::add_group(Self, String, description? : String, locked? : Bool) -> Self raise C3dError
 pub fn Parameters::empty() -> Self
+pub fn Parameters::equal(Self, Self) -> Bool
 pub fn Parameters::get(Self, String, String) -> Parameter? raise C3dError
 pub fn Parameters::group(Self, String) -> Group? raise C3dError
+pub fn Parameters::not_equal(Self, Self) -> Bool
 pub fn Parameters::put_int(Self, String, String, Int, override_locked? : Bool) -> Self raise C3dError
 pub fn Parameters::put_ints(Self, String, String, Array[Int], override_locked? : Bool) -> Self raise C3dError
 pub fn Parameters::put_real(Self, String, String, Double, override_locked? : Bool) -> Self raise C3dError
@@ -387,6 +432,7 @@ pub fn Parameters::put_texts(Self, String, String, Array[String], override_locke
 pub fn Parameters::remove(Self, String, String, override_locked? : Bool) -> Self raise C3dError
 pub fn Parameters::require(Self, String, String) -> Parameter raise C3dError
 pub fn Parameters::set(Self, String, Parameter, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::to_repr(Self) -> @debug.Repr
 
 pub struct Reader {
   data : Bytes
@@ -412,12 +458,18 @@ pub fn Reader::to_document(Self) -> Document raise C3dError
 pub(all) struct Report {
   diagnostics : Array[Diagnostic]
 } derive(Eq, @debug.Debug)
+pub fn Report::equal(Self, Self) -> Bool
 pub fn Report::has_errors(Self) -> Bool
+pub fn Report::not_equal(Self, Self) -> Bool
+pub fn Report::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Severity {
   Warning
   Error
 } derive(Eq, @debug.Debug)
+pub fn Severity::equal(Self, Self) -> Bool
+pub fn Severity::not_equal(Self, Self) -> Bool
+pub fn Severity::to_repr(Self) -> @debug.Repr
 
 pub(all) struct TrialSummary {
   frames : Int
@@ -428,6 +480,9 @@ pub(all) struct TrialSummary {
   markers : Array[MarkerSummary]
   analog : Array[AnalogSummary]
 } derive(Eq, @debug.Debug)
+pub fn TrialSummary::equal(Self, Self) -> Bool
+pub fn TrialSummary::not_equal(Self, Self) -> Bool
+pub fn TrialSummary::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

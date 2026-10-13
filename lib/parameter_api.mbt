@@ -1,6 +1,6 @@
 ///|
 pub fn Parameters::empty() -> Parameters {
-  { groups: [], values: [] }
+  { groups: [], values: [], }
 }
 
 ///|
@@ -53,8 +53,8 @@ pub fn Parameters::require(
 pub fn Parameters::add_group(
   self : Parameters,
   name : String,
-  description? : String = "",
-  locked? : Bool = false,
+  description~ : String = "",
+  locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   let normalized = normalize_name(name)
   if self.group(normalized) is Some(_) {
@@ -76,7 +76,7 @@ pub fn Parameters::add_group(
   if group.description.length() > 255 {
     raise C3dError::Invalid("group description too long")
   }
-  { groups: self.groups + [group], values: self.values.copy() }
+  { groups: self.groups + [group], values: self.values.copy(), }
 }
 
 ///|
@@ -84,7 +84,7 @@ pub fn Parameters::set(
   self : Parameters,
   group : String,
   value : Parameter,
-  override_locked? : Bool = false,
+  override_locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   let base = if self.group(group) is None {
     self.add_group(group)
@@ -92,7 +92,7 @@ pub fn Parameters::set(
     self
   }
   let id = base.group(group).unwrap().id
-  let normalized = { ..value, name: normalize_name(value.name), group_id: id }
+  let normalized = { ..value, name: normalize_name(value.name), group_id: id, }
   validate_parameter(normalized)
   let values : Array[Parameter] = []
   let mut replaced = false
@@ -110,7 +110,7 @@ pub fn Parameters::set(
   if !replaced {
     values.push(normalized)
   }
-  { groups: base.groups.copy(), values }
+  { groups: base.groups.copy(), values, }
 }
 
 ///|
@@ -118,7 +118,7 @@ pub fn Parameters::remove(
   self : Parameters,
   group : String,
   name : String,
-  override_locked? : Bool = false,
+  override_locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   let existing = self.get(group, name)
   match existing {
@@ -140,7 +140,7 @@ pub fn Parameters::remove(
 ///|
 pub fn Parameter::integer(
   name : String,
-  value : Int,
+  value : Int32,
 ) -> Parameter raise C3dError {
   let out = @buffer.Buffer::Buffer()
   put_i16(out, value)
@@ -158,7 +158,7 @@ pub fn Parameter::integer(
 ///|
 pub fn Parameter::unsigned(
   name : String,
-  value : Int,
+  value : Int32,
 ) -> Parameter raise C3dError {
   let out = @buffer.Buffer::Buffer()
   put_u16(out, value)
@@ -194,8 +194,8 @@ pub fn Parameter::real(
 ///|
 pub fn Parameter::integers(
   name : String,
-  values : Array[Int],
-  dimensions? : Array[Int] = [values.length()],
+  values : Array[Int32],
+  dimensions~ : Array[Int32] = [values.length()],
 ) -> Parameter raise C3dError {
   let out = @buffer.Buffer::Buffer()
   for value in values {
@@ -217,8 +217,8 @@ pub fn Parameter::integers(
 ///|
 pub fn Parameter::unsigneds(
   name : String,
-  values : Array[Int],
-  dimensions? : Array[Int] = [values.length()],
+  values : Array[Int32],
+  dimensions~ : Array[Int32] = [values.length()],
 ) -> Parameter raise C3dError {
   let out = @buffer.Buffer::Buffer()
   for value in values {
@@ -241,7 +241,7 @@ pub fn Parameter::unsigneds(
 pub fn Parameter::reals(
   name : String,
   values : Array[Double],
-  dimensions? : Array[Int] = [values.length()],
+  dimensions~ : Array[Int32] = [values.length()],
 ) -> Parameter raise C3dError {
   let out = @buffer.Buffer::Buffer()
   for value in values {
@@ -317,11 +317,11 @@ pub fn Parameter::texts(
 ///|
 pub fn Parameter::int_values(
   self : Parameter,
-  unsigned? : Bool = false,
-) -> Array[Int] raise C3dError {
+  unsigned~ : Bool = false,
+) -> Array[Int32] raise C3dError {
   validate_parameter(self)
   let count = element_count(self.dimensions)
-  let values : Array[Int] = []
+  let values : Array[Int32] = []
   match self.data_type {
     1 =>
       for i in 0..<count {
@@ -362,7 +362,7 @@ pub fn Parameter::real_values(self : Parameter) -> Array[Double] raise C3dError 
 ///|
 pub fn Parameter::number(
   self : Parameter,
-  unsigned? : Bool = false,
+  unsigned~ : Bool = false,
 ) -> Double raise C3dError {
   if element_count(self.dimensions) != 1 {
     raise C3dError::Invalid("scalar numeric parameter required")
@@ -401,8 +401,8 @@ pub fn Parameter::text_values(self : Parameter) -> Array[String] raise C3dError 
 ///|
 pub fn Parameter::linear_index(
   self : Parameter,
-  indices : Array[Int],
-) -> Int raise C3dError {
+  indices : Array[Int32],
+) -> Int32 raise C3dError {
   validate_parameter(self)
   if indices.length() != self.dimensions.length() {
     raise C3dError::Invalid("array index rank mismatch")
@@ -434,8 +434,8 @@ pub fn Parameters::put_int(
   self : Parameters,
   group : String,
   name : String,
-  value : Int,
-  override_locked? : Bool = false,
+  value : Int32,
+  override_locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   self.set(group, Parameter::integer(name, value), override_locked~)
 }
@@ -446,7 +446,7 @@ pub fn Parameters::put_real(
   group : String,
   name : String,
   value : Double,
-  override_locked? : Bool = false,
+  override_locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   self.set(group, Parameter::real(name, value), override_locked~)
 }
@@ -457,7 +457,7 @@ pub fn Parameters::put_text(
   group : String,
   name : String,
   value : String,
-  override_locked? : Bool = false,
+  override_locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   self.set(group, Parameter::text(name, value), override_locked~)
 }
@@ -468,7 +468,7 @@ pub fn Parameters::put_texts(
   group : String,
   name : String,
   values : Array[String],
-  override_locked? : Bool = false,
+  override_locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   self.set(group, Parameter::texts(name, values), override_locked~)
 }
@@ -479,7 +479,7 @@ pub fn Parameters::put_reals(
   group : String,
   name : String,
   values : Array[Double],
-  override_locked? : Bool = false,
+  override_locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   self.set(group, Parameter::reals(name, values), override_locked~)
 }
@@ -489,8 +489,8 @@ pub fn Parameters::put_ints(
   self : Parameters,
   group : String,
   name : String,
-  values : Array[Int],
-  override_locked? : Bool = false,
+  values : Array[Int32],
+  override_locked~ : Bool = false,
 ) -> Parameters raise C3dError {
   self.set(group, Parameter::integers(name, values), override_locked~)
 }
@@ -501,7 +501,7 @@ pub fn optional_number(
   group : String,
   name : String,
   fallback : Double,
-  unsigned? : Bool = false,
+  unsigned~ : Bool = false,
 ) -> Double raise C3dError {
   match parameters.get(group, name) {
     None => fallback

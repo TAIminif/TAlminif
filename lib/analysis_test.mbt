@@ -1,6 +1,6 @@
 ///|
 test "online calibrated statistics use all subsamples and omit missing points" {
-  let summary = analyze(Reader::new(write(sample_document())))
+  let summary = @lib.analyze(@lib.Reader::new(@lib.write(sample_document())))
   assert_eq(summary.frames, 3)
   assert_eq(summary.markers[1].valid_samples, 2)
   assert_eq(summary.markers[1].missing_samples, 1)
@@ -13,12 +13,12 @@ test "online calibrated statistics use all subsamples and omit missing points" {
 
 ///|
 test "streaming moments are stable and empty distributions explicit" {
-  let moments = Moments::new()
+  let moments = @lib.Moments::new()
   for value in [1000000001.0, 1000000002.0, 1000000003.0] {
     moments.add(value)
   }
   assert_eq(moments.finish().variance, 1.0)
-  assert_eq(distribution_json(Moments::new().finish()), {
+  assert_eq(@lib.distribution_json(@lib.Moments::new().finish()), {
     "count": 0,
     "minimum": null,
     "maximum": null,
@@ -32,8 +32,8 @@ test "streaming moments are stable and empty distributions explicit" {
 test "quality diagnostics identify duplicate labels and event times" {
   let document = sample_document()
     .rename_point(1, "L")
-    .with_events([Event::new(1.0, "outside")])
-  let report = check(Reader::new(write(document)))
+    .with_events([@lib.Event::new(1.0, "outside")])
+  let report = @lib.check(@lib.Reader::new(@lib.write(document)))
   assert_false(report.has_errors())
   assert_true(report.diagnostics.any(d => d.code == "DUPLICATE_LABEL"))
   assert_true(report.diagnostics.any(d => d.code == "EVENT_OUTSIDE_TRIAL"))

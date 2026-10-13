@@ -1,6 +1,6 @@
 ///|
 pub(all) struct Distribution {
-  count : Int
+  count : Int32
   minimum : Double
   maximum : Double
   mean : Double
@@ -10,7 +10,7 @@ pub(all) struct Distribution {
 
 ///|
 pub struct Moments {
-  mut count : Int
+  mut count : Int32
   mut minimum : Double
   mut maximum : Double
   mut mean : Double
@@ -20,7 +20,14 @@ pub struct Moments {
 
 ///|
 pub fn Moments::new() -> Moments {
-  { count: 0, minimum: 0.0, maximum: 0.0, mean: 0.0, m2: 0.0, sum_squares: 0.0 }
+  {
+    count: 0,
+    minimum: 0.0,
+    maximum: 0.0,
+    mean: 0.0,
+    m2: 0.0,
+    sum_squares: 0.0,
+  }
 }
 
 ///|
@@ -75,9 +82,9 @@ pub fn Moments::finish(self : Moments) -> Distribution {
 ///|
 pub(all) struct MarkerSummary {
   label : String
-  valid_samples : Int
-  missing_samples : Int
-  longest_missing_run : Int
+  valid_samples : Int32
+  missing_samples : Int32
+  longest_missing_run : Int32
   x : Distribution
   y : Distribution
   z : Distribution
@@ -93,10 +100,10 @@ pub(all) struct AnalogSummary {
 
 ///|
 pub(all) struct TrialSummary {
-  frames : Int
+  frames : Int32
   point_rate : Double
   analog_rate : Double
-  first_frame : Int
+  first_frame : Int32
   duration : Double
   markers : Array[MarkerSummary]
   analog : Array[AnalogSummary]
@@ -108,9 +115,9 @@ struct MarkerMoments {
   y : Moments
   z : Moments
   residual : Moments
-  mut missing : Int
-  mut current_gap : Int
-  mut longest_gap : Int
+  mut missing : Int32
+  mut current_gap : Int32
+  mut longest_gap : Int32
 }
 
 ///|
@@ -118,7 +125,7 @@ pub struct Analyzer {
   layout : Layout
   markers : Array[MarkerMoments]
   analog : Array[Moments]
-  mut frames : Int
+  mut frames : Int32
 }
 
 ///|
@@ -245,31 +252,31 @@ pub fn summary_json(summary : TrialSummary) -> Json {
     "analog_rate": summary.analog_rate,
     "first_frame": summary.first_frame,
     "duration": summary.duration,
-    "markers": summary.markers
-    .map(marker => {
-      (
-        {
-          "label": marker.label,
-          "valid_samples": marker.valid_samples,
-          "missing_samples": marker.missing_samples,
-          "longest_missing_run": marker.longest_missing_run,
-          "x": distribution_json(marker.x),
-          "y": distribution_json(marker.y),
-          "z": distribution_json(marker.z),
-          "residual": distribution_json(marker.residual),
-        } : Json)
-    })
-    .to_json(),
-    "analog": summary.analog
-    .map(channel => {
-      (
-        {
-          "label": channel.label,
-          "unit": channel.unit,
-          "samples": distribution_json(channel.samples),
-        } : Json)
-    })
-    .to_json(),
+    "markers": Json(
+      summary.markers.map(marker => {
+        (
+          {
+            "label": marker.label,
+            "valid_samples": marker.valid_samples,
+            "missing_samples": marker.missing_samples,
+            "longest_missing_run": marker.longest_missing_run,
+            "x": distribution_json(marker.x),
+            "y": distribution_json(marker.y),
+            "z": distribution_json(marker.z),
+            "residual": distribution_json(marker.residual),
+          } : Json)
+      }),
+    ),
+    "analog": Json(
+      summary.analog.map(channel => {
+        (
+          {
+            "label": channel.label,
+            "unit": channel.unit,
+            "samples": distribution_json(channel.samples),
+          } : Json)
+      }),
+    ),
   }
 }
 
@@ -289,14 +296,14 @@ pub fn inspect_json(reader : Reader) -> Json {
     "point_count": layout.point_count,
     "point_rate": layout.point_rate,
     "point_scale": layout.point_scale,
-    "point_labels": layout.point_labels.to_json(),
+    "point_labels": Json(layout.point_labels),
     "point_unit": layout.point_unit,
     "analog_subsamples": layout.analog_subsamples,
     "analog_rate": layout.analog_rate,
-    "analog_channels": layout.analog_channels.map(channel_json).to_json(),
+    "analog_channels": Json(layout.analog_channels.map(channel_json)),
     "parameter_groups": reader.parameters().groups.length(),
     "parameters": reader.parameters().values.length(),
-    "events": reader.events().map(event_json).to_json(),
+    "events": Json(reader.events().map(event_json)),
     "data_offset": layout.data_offset,
     "frame_bytes": layout.frame_bytes,
   }
@@ -332,7 +339,7 @@ fn check_labels(
 ///|
 pub fn check(
   reader : Reader,
-  scan_frames? : Bool = true,
+  scan_frames~ : Bool = true,
 ) -> Report raise C3dError {
   let diagnostics : Array[Diagnostic] = []
   let layout = reader.layout()
@@ -387,20 +394,20 @@ pub fn check(
 pub fn report_json(report : Report) -> Json {
   {
     "ok": !report.has_errors(),
-    "diagnostics": report.diagnostics
-    .map(item => {
-      (
-        {
-          "severity": if item.severity == Error {
-            "error"
-          } else {
-            "warning"
-          },
-          "code": item.code,
-          "location": item.location,
-          "message": item.message,
-        } : Json)
-    })
-    .to_json(),
+    "diagnostics": Json(
+      report.diagnostics.map(item => {
+        (
+          {
+            "severity": if item.severity == Error {
+              "error"
+            } else {
+              "warning"
+            },
+            "code": item.code,
+            "location": item.location,
+            "message": item.message,
+          } : Json)
+      }),
+    ),
   }
 }

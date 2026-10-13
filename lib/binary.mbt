@@ -1,8 +1,8 @@
 ///|
 pub fn check_range(
   data : Bytes,
-  offset : Int,
-  size : Int,
+  offset : Int32,
+  size : Int32,
 ) -> Unit raise C3dError {
   if offset < 0 || size < 0 {
     raise C3dError::Invalid("negative byte range")
@@ -13,7 +13,11 @@ pub fn check_range(
 }
 
 ///|
-pub fn checked_add(a : Int, b : Int, context : String) -> Int raise C3dError {
+pub fn checked_add(
+  a : Int32,
+  b : Int32,
+  context : String,
+) -> Int32 raise C3dError {
   if a < 0 || b < 0 || b > 2147483647 - a {
     raise C3dError::ResourceLimit(context)
   }
@@ -21,7 +25,11 @@ pub fn checked_add(a : Int, b : Int, context : String) -> Int raise C3dError {
 }
 
 ///|
-pub fn checked_mul(a : Int, b : Int, context : String) -> Int raise C3dError {
+pub fn checked_mul(
+  a : Int32,
+  b : Int32,
+  context : String,
+) -> Int32 raise C3dError {
   if a < 0 || b < 0 {
     raise C3dError::Invalid(context)
   }
@@ -32,13 +40,13 @@ pub fn checked_mul(a : Int, b : Int, context : String) -> Int raise C3dError {
 }
 
 ///|
-pub fn u8(data : Bytes, offset : Int) -> Int raise C3dError {
+pub fn u8(data : Bytes, offset : Int32) -> Int32 raise C3dError {
   check_range(data, offset, 1)
   data[offset].to_int()
 }
 
 ///|
-pub fn i8(data : Bytes, offset : Int) -> Int raise C3dError {
+pub fn i8(data : Bytes, offset : Int32) -> Int32 raise C3dError {
   let value = u8(data, offset)
   if value >= 128 {
     value - 256
@@ -48,13 +56,13 @@ pub fn i8(data : Bytes, offset : Int) -> Int raise C3dError {
 }
 
 ///|
-pub fn u16(data : Bytes, offset : Int) -> Int raise C3dError {
+pub fn u16(data : Bytes, offset : Int32) -> Int32 raise C3dError {
   check_range(data, offset, 2)
   data[offset].to_int() | (data[offset + 1].to_int() << 8)
 }
 
 ///|
-pub fn i16(data : Bytes, offset : Int) -> Int raise C3dError {
+pub fn i16(data : Bytes, offset : Int32) -> Int32 raise C3dError {
   let value = u16(data, offset)
   if value >= 32768 {
     value - 65536
@@ -64,7 +72,7 @@ pub fn i16(data : Bytes, offset : Int) -> Int raise C3dError {
 }
 
 ///|
-pub fn u32(data : Bytes, offset : Int) -> UInt raise C3dError {
+pub fn u32(data : Bytes, offset : Int32) -> UInt32 raise C3dError {
   check_range(data, offset, 4)
   data[offset].to_uint() |
   (data[offset + 1].to_uint() << 8) |
@@ -73,13 +81,13 @@ pub fn u32(data : Bytes, offset : Int) -> UInt raise C3dError {
 }
 
 ///|
-pub fn f32(data : Bytes, offset : Int) -> Double raise C3dError {
+pub fn f32(data : Bytes, offset : Int32) -> Double raise C3dError {
   Float::reinterpret_from_uint(u32(data, offset)).to_double()
 }
 
 ///|
 pub fn ascii(data : Bytes) -> String raise C3dError {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for byte in data {
     let value = byte.to_int()
     if value > 127 || value == 0 {
@@ -118,10 +126,10 @@ pub fn utf8_bytes(text : String) -> Bytes {
 ///|
 pub fn round_int(
   value : Double,
-  minimum : Int,
-  maximum : Int,
+  minimum : Int32,
+  maximum : Int32,
   context : String,
-) -> Int raise C3dError {
+) -> Int32 raise C3dError {
   if !finite(value) {
     raise C3dError::Invalid(context + ": non-finite number")
   }
@@ -135,10 +143,10 @@ pub fn round_int(
 ///|
 pub fn exact_int(
   value : Double,
-  minimum : Int,
-  maximum : Int,
+  minimum : Int32,
+  maximum : Int32,
   context : String,
-) -> Int raise C3dError {
+) -> Int32 raise C3dError {
   let result = round_int(value, minimum, maximum, context)
   if result.to_double() != value {
     raise C3dError::Invalid(context + ": integer required")
@@ -147,7 +155,7 @@ pub fn exact_int(
 }
 
 ///|
-pub fn put_u16(out : @buffer.Buffer, value : Int) -> Unit raise C3dError {
+pub fn put_u16(out : @buffer.Buffer, value : Int32) -> Unit raise C3dError {
   if value < 0 || value > 65535 {
     raise C3dError::Invalid("uint16 outside range")
   }
@@ -155,7 +163,7 @@ pub fn put_u16(out : @buffer.Buffer, value : Int) -> Unit raise C3dError {
 }
 
 ///|
-pub fn put_i16(out : @buffer.Buffer, value : Int) -> Unit raise C3dError {
+pub fn put_i16(out : @buffer.Buffer, value : Int32) -> Unit raise C3dError {
   if value < -32768 || value > 32767 {
     raise C3dError::Invalid("int16 outside range")
   }
@@ -171,7 +179,7 @@ pub fn put_f32(out : @buffer.Buffer, value : Double) -> Unit raise C3dError {
 }
 
 ///|
-pub fn pad_to(out : @buffer.Buffer, alignment : Int) -> Unit raise C3dError {
+pub fn pad_to(out : @buffer.Buffer, alignment : Int32) -> Unit raise C3dError {
   if alignment < 1 {
     raise C3dError::Invalid("invalid alignment")
   }
@@ -184,7 +192,7 @@ pub fn pad_to(out : @buffer.Buffer, alignment : Int) -> Unit raise C3dError {
 ///|
 pub fn hex_bytes(data : Bytes) -> String {
   let digits = "0123456789abcdef"
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for byte in data {
     let value = byte.to_int()
     out.write_char(digits[value >> 4].to_int().unsafe_to_char())
@@ -196,7 +204,7 @@ pub fn hex_bytes(data : Bytes) -> String {
 ///|
 pub fn parse_hex(
   text : String,
-  max_bytes? : Int = 1048576,
+  max_bytes~ : Int32 = 1048576,
 ) -> Bytes raise C3dError {
   if text.length() % 2 != 0 {
     raise C3dError::Invalid("odd hex length")
@@ -214,7 +222,7 @@ pub fn parse_hex(
 }
 
 ///|
-fn hex_digit(value : Int) -> Int raise C3dError {
+fn hex_digit(value : Int32) -> Int32 raise C3dError {
   if value >= 48 && value <= 57 {
     return value - 48
   }

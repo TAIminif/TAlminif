@@ -1,20 +1,25 @@
 ///|
 test "parameter builders support signed unsigned float and UTF8 arrays" {
-  assert_eq(Parameter::integers("NUM", [-1, 32767]).int_values(), [-1, 32767])
-  assert_eq(Parameter::unsigned("COUNT", 65535).number(unsigned=true), 65535.0)
-  assert_eq(Parameter::reals("RATE", [100.0, 200.0]).real_values(), [
+  assert_eq(@lib.Parameter::integers("NUM", [-1, 32767]).int_values(), [
+    -1, 32767,
+  ])
+  assert_eq(
+    @lib.Parameter::unsigned("COUNT", 65535).number(unsigned=true),
+    65535.0,
+  )
+  assert_eq(@lib.Parameter::reals("RATE", [100.0, 200.0]).real_values(), [
     100.0, 200.0,
   ])
-  assert_eq(Parameter::texts("LABELS", ["左脚", "R"]).text_values(), [
+  assert_eq(@lib.Parameter::texts("LABELS", ["左脚", "R"]).text_values(), [
     "左脚", "R",
   ])
-  assert_eq(Parameter::text("UNIT", "mm").text_values(), ["mm"])
-  expect_error(() => Parameter::integer("NUM", 40000))
+  assert_eq(@lib.Parameter::text("UNIT", "mm").text_values(), ["mm"])
+  expect_error(() => @lib.Parameter::integer("NUM", 40000))
 }
 
 ///|
 test "immutable parameter editing respects locked fields" {
-  let original = Parameters::empty().put_int("point", "used", 2)
+  let original = @lib.Parameters::empty().put_int("point", "used", 2)
   let changed = original.put_int("POINT", "USED", 3)
   assert_eq(original.require("POINT", "USED").number(), 2.0)
   assert_eq(changed.require("POINT", "USED").number(), 3.0)
@@ -35,7 +40,7 @@ test "immutable parameter editing respects locked fields" {
 
 ///|
 test "Fortran parameter dimension order is explicit" {
-  let array = Parameter::integers("MATRIX", [10, 11, 12, 20, 21, 22], dimensions=[
+  let array = @lib.Parameter::integers("MATRIX", [10, 11, 12, 20, 21, 22], dimensions=[
     3, 2,
   ])
   assert_eq(array.linear_index([2, 1]), 5)

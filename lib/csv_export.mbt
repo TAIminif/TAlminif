@@ -13,7 +13,7 @@ pub fn csv_field(text : String) -> String {
   if !quoted {
     return text
   }
-  let output = StringBuilder::new()
+  let output = StringBuilder()
   output.write_string("\"")
   for character in text.iter() {
     if character == '"' {
@@ -34,12 +34,12 @@ fn csv_row(fields : Array[String]) -> String {
 ///|
 priv struct CsvOutput {
   builder : StringBuilder
-  mut size : Int
+  mut size : Int32
 }
 
 ///|
 fn CsvOutput::new() -> CsvOutput {
-  { builder: StringBuilder::new(), size: 0 }
+  { builder: StringBuilder(), size: 0, }
 }
 
 ///|
@@ -51,7 +51,7 @@ fn CsvOutput::to_string(self : CsvOutput) -> String {
 fn csv_append(
   output : CsvOutput,
   row : String,
-  maximum : Int,
+  maximum : Int32,
 ) -> Unit raise C3dError {
   let next = checked_add(
     output.size,
@@ -69,7 +69,7 @@ fn csv_append(
 /// Long-form point CSV retains validity, residual and camera mask.
 pub fn points_csv(
   reader : Reader,
-  maximum_bytes? : Int = 128 * 1024 * 1024,
+  maximum_bytes~ : Int32 = 128 * 1024 * 1024,
 ) -> String raise C3dError {
   if maximum_bytes < 1 {
     raise C3dError::Invalid("CSV size limit")
@@ -122,7 +122,7 @@ pub fn points_csv(
 /// Analog CSV uses calibrated physical values and the actual analog sample times.
 pub fn analog_csv(
   reader : Reader,
-  maximum_bytes? : Int = 128 * 1024 * 1024,
+  maximum_bytes~ : Int32 = 128 * 1024 * 1024,
 ) -> String raise C3dError {
   if maximum_bytes < 1 {
     raise C3dError::Invalid("CSV size limit")
@@ -166,7 +166,7 @@ pub fn analog_csv(
 ///|
 pub fn events_csv(
   reader : Reader,
-  maximum_bytes? : Int = 128 * 1024 * 1024,
+  maximum_bytes~ : Int32 = 128 * 1024 * 1024,
 ) -> String raise C3dError {
   if maximum_bytes < 1 {
     raise C3dError::Invalid("CSV size limit")

@@ -1,7 +1,7 @@
 ///|
 pub fn read_header(
   data : Bytes,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Header raise C3dError {
   validate_limits(limits)
   if data.length() > limits.max_file_bytes {
@@ -49,7 +49,7 @@ pub fn read_header(
 ///|
 pub fn validate_header(
   header : Header,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Unit raise C3dError {
   validate_limits(limits)
   for
@@ -100,7 +100,7 @@ pub fn validate_header(
 ///|
 pub fn write_header(
   header : Header,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Bytes raise C3dError {
   validate_header(header, limits~)
   let out = @buffer.Buffer::Buffer()
@@ -126,9 +126,9 @@ pub fn write_header(
 
 ///|
 pub fn Header::new(
-  point_count : Int,
+  point_count : Int32,
   point_rate : Double,
-  scale? : Double = -0.01,
+  scale~ : Double = -0.01,
 ) -> Header {
   {
     parameter_block: 2,
@@ -149,7 +149,7 @@ pub fn Header::new(
 pub fn trial_frame(
   parameters : Parameters,
   name : String,
-) -> Int? raise C3dError {
+) -> Int32? raise C3dError {
   match parameters.get("TRIAL", name) {
     None => None
     Some(value) => {
@@ -171,7 +171,7 @@ pub fn resolve_frame_range(
   header : Header,
   parameters : Parameters,
   limits : Limits,
-) -> (Int, Int) raise C3dError {
+) -> (Int32, Int32) raise C3dError {
   let trial_start = trial_frame(parameters, "ACTUAL_START_FIELD")
   let trial_end = trial_frame(parameters, "ACTUAL_END_FIELD")
   if (trial_start is Some(_)) != (trial_end is Some(_)) {
@@ -258,7 +258,7 @@ fn labels_or_default(
   parameters : Parameters,
   group : String,
   name : String,
-  count : Int,
+  count : Int32,
   prefix : String,
 ) -> Array[String] raise C3dError {
   match parameters.get(group, name) {
@@ -285,9 +285,9 @@ fn numeric_vector(
   parameters : Parameters,
   group : String,
   name : String,
-  count : Int,
+  count : Int32,
   fallback : Double,
-  unsigned? : Bool = false,
+  unsigned~ : Bool = false,
 ) -> Array[Double] raise C3dError {
   match parameters.get(group, name) {
     None => Array::make(count, fallback)
@@ -311,7 +311,7 @@ fn numeric_vector(
 pub fn resolve_layout(
   header : Header,
   parameters : Parameters,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Layout raise C3dError {
   validate_header(header, limits~)
   validate_parameters(parameters, limits~)

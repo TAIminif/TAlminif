@@ -140,31 +140,31 @@ pub fn channel_json(channel : Channel) -> Json {
 ///|
 pub fn parameters_json(parameters : Parameters) -> Json {
   {
-    "groups": parameters.groups
-    .map(group => {
-      (
-        {
-          "id": group.id,
-          "name": group.name,
-          "description_hex": hex_bytes(group.description),
-          "locked": group.locked,
-        } : Json)
-    })
-    .to_json(),
-    "values": parameters.values
-    .map(value => {
-      (
-        {
-          "group_id": value.group_id,
-          "name": value.name,
-          "data_type": value.data_type,
-          "dimensions": value.dimensions.to_json(),
-          "data_hex": hex_bytes(value.data),
-          "description_hex": hex_bytes(value.description),
-          "locked": value.locked,
-        } : Json)
-    })
-    .to_json(),
+    "groups": Json(
+      parameters.groups.map(group => {
+        (
+          {
+            "id": group.id,
+            "name": group.name,
+            "description_hex": hex_bytes(group.description),
+            "locked": group.locked,
+          } : Json)
+      }),
+    ),
+    "values": Json(
+      parameters.values.map(value => {
+        (
+          {
+            "group_id": value.group_id,
+            "name": value.name,
+            "data_type": value.data_type,
+            "dimensions": Json(value.dimensions),
+            "data_hex": hex_bytes(value.data),
+            "description_hex": hex_bytes(value.description),
+            "locked": value.locked,
+          } : Json)
+      }),
+    ),
   }
 }
 
@@ -172,8 +172,8 @@ pub fn parameters_json(parameters : Parameters) -> Json {
 pub fn frame_json(frame : Frame) -> Json {
   {
     "number": frame.number,
-    "points": frame.points.map(marker_json).to_json(),
-    "analog": frame.analog.to_json(),
+    "points": Json(frame.points.map(marker_json)),
+    "analog": Json(frame.analog),
   }
 }
 
@@ -181,8 +181,8 @@ pub fn frame_json(frame : Frame) -> Json {
 pub fn document_json(document : Document) -> Json {
   {
     "format": "MoonC3D/1",
-    "point_labels": document.layout.point_labels.to_json(),
-    "point_descriptions": document.layout.point_descriptions.to_json(),
+    "point_labels": Json(document.layout.point_labels),
+    "point_descriptions": Json(document.layout.point_descriptions),
     "point_unit": document.layout.point_unit,
     "point_rate": document.layout.point_rate,
     "scale": document.layout.point_scale,
@@ -190,11 +190,9 @@ pub fn document_json(document : Document) -> Json {
     "analog_subsamples": document.layout.analog_subsamples,
     "analog_global_scale": document.layout.analog_global_scale,
     "analog_unsigned": document.layout.analog_unsigned,
-    "analog_channels": document.layout.analog_channels
-    .map(channel_json)
-    .to_json(),
-    "frames": document.frames.map(frame_json).to_json(),
-    "events": document.events.map(event_json).to_json(),
+    "analog_channels": Json(document.layout.analog_channels.map(channel_json)),
+    "frames": Json(document.frames.map(frame_json)),
+    "events": Json(document.events.map(event_json)),
     "parameters": parameters_json(document.parameters),
   }
 }
@@ -202,7 +200,7 @@ pub fn document_json(document : Document) -> Json {
 ///|
 pub fn parse_parameters_json(
   value : Json,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Parameters raise C3dError {
   ensure_keys(value, ["groups", "values"])
   let group_values = json_array(json_field(value, "groups"))
@@ -263,7 +261,7 @@ pub fn parse_parameters_json(
       locked: bool_or(parameter, "locked", false),
     })
   }
-  let result = { groups, values }
+  let result = { groups, values, }
   validate_parameters(result, limits~)
   result
 }
@@ -318,7 +316,7 @@ pub fn parse_channel_json(value : Json) -> Channel raise C3dError {
 ///|
 pub fn parse_document_json(
   value : Json,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   validate_limits(limits)
   ensure_keys(value, [
@@ -458,7 +456,7 @@ pub fn parse_document_json(
 ///|
 pub fn import_json(
   text : String,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   if text.length() > limits.max_file_bytes {
     raise C3dError::ResourceLimit("JSON input size")
@@ -471,7 +469,10 @@ pub fn import_json(
 }
 
 ///|
-pub fn check_json_nesting(text : String, maximum : Int) -> Unit raise C3dError {
+pub fn check_json_nesting(
+  text : String,
+  maximum : Int32,
+) -> Unit raise C3dError {
   if maximum < 1 {
     raise C3dError::Invalid("invalid JSON depth limit")
   }

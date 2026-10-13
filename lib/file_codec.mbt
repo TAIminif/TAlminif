@@ -5,13 +5,13 @@ pub struct Reader {
   parameters : Parameters
   layout : Layout
   events : Array[Event]
-  mut position : Int
+  mut position : Int32
 }
 
 ///|
 pub fn Reader::new(
   data : Bytes,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Reader raise C3dError {
   let header = read_header(data, limits~)
   let parameters = read_parameters(data, header.parameter_block, limits~)
@@ -23,7 +23,7 @@ pub fn Reader::new(
   )
   check_range(data, layout.data_offset, length)
   let events = read_events(header, parameters)
-  { data, header, parameters, layout, events, position: 0 }
+  { data, header, parameters, layout, events, position: 0, }
 }
 
 ///|
@@ -47,17 +47,17 @@ pub fn Reader::events(self : Reader) -> Array[Event] {
 }
 
 ///|
-pub fn Reader::position(self : Reader) -> Int {
+pub fn Reader::position(self : Reader) -> Int32 {
   self.position
 }
 
 ///|
-pub fn Reader::remaining(self : Reader) -> Int {
+pub fn Reader::remaining(self : Reader) -> Int32 {
   self.layout.frame_count - self.position
 }
 
 ///|
-pub fn Reader::frame(self : Reader, index : Int) -> Frame raise C3dError {
+pub fn Reader::frame(self : Reader, index : Int32) -> Frame raise C3dError {
   if index < 0 || index >= self.layout.frame_count {
     raise C3dError::Invalid("frame index outside file")
   }
@@ -70,7 +70,7 @@ pub fn Reader::frame(self : Reader, index : Int) -> Frame raise C3dError {
 }
 
 ///|
-pub fn Reader::seek(self : Reader, index : Int) -> Unit raise C3dError {
+pub fn Reader::seek(self : Reader, index : Int32) -> Unit raise C3dError {
   if index < 0 || index > self.layout.frame_count {
     raise C3dError::Invalid("seek index outside file")
   }
@@ -90,7 +90,7 @@ pub fn Reader::next(self : Reader) -> Frame? raise C3dError {
 ///|
 pub fn Reader::read_batch(
   self : Reader,
-  count : Int,
+  count : Int32,
 ) -> Array[Frame] raise C3dError {
   if count < 1 {
     raise C3dError::Invalid("batch size must be positive")
@@ -121,7 +121,7 @@ pub fn Reader::to_document(self : Reader) -> Document raise C3dError {
 ///|
 pub fn read(
   data : Bytes,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   Reader::new(data, limits~).to_document()
 }
@@ -131,12 +131,12 @@ pub fn Document::new(
   point_labels : Array[String],
   analog_channels : Array[Channel],
   frames : Array[Frame],
-  point_rate? : Double = 100.0,
-  scale? : Double = -0.01,
-  analog_subsamples? : Int = 0,
-  analog_global_scale? : Double = 1.0,
-  analog_unsigned? : Bool = false,
-  point_unit? : String = "mm",
+  point_rate~ : Double = 100.0,
+  scale~ : Double = -0.01,
+  analog_subsamples~ : Int32 = 0,
+  analog_global_scale~ : Double = 1.0,
+  analog_unsigned~ : Bool = false,
+  point_unit~ : String = "mm",
 ) -> Document raise C3dError {
   let header = Header::new(point_labels.length(), point_rate, scale~)
   let header = {
@@ -162,7 +162,7 @@ pub fn Document::new(
     1,
   )
   let layout = resolve_layout(header, parameters)
-  let document = { header, parameters, layout, frames, events: [] }
+  let document = { header, parameters, layout, frames, events: [], }
   validate_document(document)
   document
 }
@@ -170,7 +170,7 @@ pub fn Document::new(
 ///|
 pub fn validate_document(
   document : Document,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Unit raise C3dError {
   let resolved = resolve_layout(document.header, document.parameters, limits~)
   if resolved != document.layout {
@@ -198,8 +198,8 @@ pub fn core_parameters(
   channels : Array[Channel],
   global_scale : Double,
   unsigned : Bool,
-  frame_count : Int,
-  first_frame : Int,
+  frame_count : Int32,
+  first_frame : Int32,
 ) -> Parameters raise C3dError {
   if labels.length() > 255 || channels.length() > 255 {
     raise C3dError::Unsupported("split LABELS2 arrays are unsupported")
@@ -360,7 +360,7 @@ pub fn core_parameters(
 ///|
 pub fn write(
   document : Document,
-  limits? : Limits = Limits::default(),
+  limits~ : Limits = Limits::default(),
 ) -> Bytes raise C3dError {
   validate_document(document, limits~)
   let mut parameters = write_event_parameters(

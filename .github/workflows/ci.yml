@@ -30,6 +30,7 @@ jobs:
       - name: Check build and test all core backends
         run: |
           moon check --deny-warn
+          moon check --target js --deny-warn
           moon build
           moon test --target wasm-gc
           moon test --target wasm

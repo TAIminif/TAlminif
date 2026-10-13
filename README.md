@@ -24,7 +24,7 @@ MoonC3D 是用 MoonBit 编写的 C3D 动作捕捉文件工具库。它将三维�
 
 ## 安装与运行
 
-安装 [MoonBit 工具链](https://www.moonbitlang.cn/download/)。文件 CLI 需要 Node.js 22 或更新版本，核心库无需 Node、Python 或外部 C3D 库。本机验证版本为 `moon 0.1.20260803` / `moonc v0.10.6+80dc50f24`；CI 使用官方当前稳定工具链并记录实际版本。
+安装 [MoonBit 工具链](https://www.moonbitlang.cn/download/)。文件 CLI 需要 Node.js 22 或更新版本，核心库无需 Node、Python 或外部 C3D 库。使用 `moon 0.1.20261012` / `moonc v0.10.15+943464bfa` 或兼容更新版本；CI 安装官方当前稳定工具链并记录实际版本。
 
 ```sh
 git clone https://github.com/TAIminif/TAlminif.git

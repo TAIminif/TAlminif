@@ -54,7 +54,7 @@ pub fn read_events(
 fn event_texts(
   parameters : Parameters,
   name : String,
-  count : Int,
+  count : Int32,
 ) -> Array[String] raise C3dError {
   match parameters.get("EVENT", name) {
     None => Array::make(count, "")
@@ -72,8 +72,8 @@ fn event_texts(
 fn event_ints(
   parameters : Parameters,
   name : String,
-  count : Int,
-) -> Array[Int] raise C3dError {
+  count : Int32,
+) -> Array[Int32] raise C3dError {
   match parameters.get("EVENT", name) {
     None => Array::make(count, 0)
     Some(value) => {
@@ -143,8 +143,8 @@ pub fn write_event_parameters(
     return result
   }
   let times : Array[Double] = []
-  let icons : Array[Int] = []
-  let flags : Array[Int] = []
+  let icons : Array[Int32] = []
+  let flags : Array[Int32] = []
   for event in events {
     if !finite(event.time) || event.time < 0.0 {
       raise C3dError::Invalid("event time must be finite and nonnegative")

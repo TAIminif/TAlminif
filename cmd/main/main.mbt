@@ -1,6 +1,6 @@
 ///|
 /// The Node host only supplies filesystem and process operations.
-extern "js" fn arguments() -> Array[String] = "() => globalThis.__moonC3D.args"
+extern "js" fn arguments() -> FixedArray[String] = "() => globalThis.__moonC3D.args"
 
 ///|
 extern "js" fn read_bytes(path : String) -> Bytes = "(path) => globalThis.__moonC3D.readBytes(path)"
@@ -18,7 +18,7 @@ extern "js" fn write_text(path : String, data : String) -> Unit = "(path, data) 
 extern "js" fn print_text(text : String) -> Unit = "(text) => globalThis.__moonC3D.stdout(text)"
 
 ///|
-extern "js" fn fail(text : String, code : Int) -> Unit = "(text, code) => globalThis.__moonC3D.fail(text, code)"
+extern "js" fn fail(text : String, code : Int32) -> Unit = "(text, code) => globalThis.__moonC3D.fail(text, code)"
 
 ///|
 let help : String =
@@ -39,14 +39,14 @@ let help : String =
   #|All output paths must be new. Crops rebase frame numbers and event times.
 
 ///|
-fn arity(args : Array[String], count : Int) -> Unit raise @c3d.C3dError {
+fn arity(args : Array[String], count : Int32) -> Unit raise @c3d.C3dError {
   if args.length() != count {
     raise @c3d.invalid("wrong argument count; use help")
   }
 }
 
 ///|
-fn integer(text : String) -> Int raise @c3d.C3dError {
+fn integer(text : String) -> Int32 raise @c3d.C3dError {
   let result = @string.parse_int(text) catch {
     _ => raise @c3d.invalid("expected integer: " + text)
   }
@@ -68,11 +68,11 @@ fn number(text : String) -> Double raise @c3d.C3dError {
 }
 
 ///|
-fn indices(text : String) -> Array[Int] raise @c3d.C3dError {
+fn indices(text : String) -> Array[Int32] raise @c3d.C3dError {
   if text == "" {
     return []
   }
-  let result : Array[Int] = []
+  let result : Array[Int32] = []
   for part in text.split(",") {
     result.push(integer(part.to_owned()))
   }
@@ -234,7 +234,7 @@ fn run(args : Array[String]) -> Unit raise @c3d.C3dError {
 
 ///|
 fn main {
-  run(arguments()) catch {
+  run(arguments().iter().collect()) catch {
     error => {
       let result : Json = {
         "ok": false,

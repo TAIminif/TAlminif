@@ -5,7 +5,7 @@ pub fn rebuild(
   labels : Array[String],
   descriptions : Array[String],
   channels : Array[Channel],
-  first_frame : Int,
+  first_frame : Int32,
   events : Array[Event],
 ) -> Document raise C3dError {
   let analog_values = checked_mul(
@@ -50,7 +50,7 @@ pub fn rebuild(
   )
   let parameters = write_event_parameters(parameters, events)
   let layout = resolve_layout(header, parameters)
-  let result = { header, parameters, layout, frames, events }
+  let result = { header, parameters, layout, frames, events, }
   validate_document(result)
   result
 }
@@ -58,9 +58,9 @@ pub fn rebuild(
 ///|
 pub fn Document::crop(
   self : Document,
-  start : Int,
-  end : Int,
-  rebase? : Bool = true,
+  start : Int32,
+  end : Int32,
+  rebase~ : Bool = true,
 ) -> Document raise C3dError {
   validate_document(self)
   if start < 0 || end <= start || end > self.frames.length() {
@@ -109,7 +109,7 @@ pub fn Document::crop_time(
   self : Document,
   start : Double,
   end : Double,
-  rebase? : Bool = true,
+  rebase~ : Bool = true,
 ) -> Document raise C3dError {
   if !finite(start) || !finite(end) || end <= start {
     raise C3dError::Invalid("invalid crop time range")
@@ -127,8 +127,11 @@ pub fn Document::crop_time(
 }
 
 ///|
-fn validate_selection(indices : Array[Int], count : Int) -> Unit raise C3dError {
-  let seen : Map[Int, Bool] = Map([])
+fn validate_selection(
+  indices : Array[Int32],
+  count : Int32,
+) -> Unit raise C3dError {
+  let seen : Map[Int32, Bool] = Map([])
   for index in indices {
     if index < 0 || index >= count {
       raise C3dError::Invalid("selected index outside channel range")
@@ -143,7 +146,7 @@ fn validate_selection(indices : Array[Int], count : Int) -> Unit raise C3dError 
 ///|
 pub fn Document::select_points(
   self : Document,
-  indices : Array[Int],
+  indices : Array[Int32],
 ) -> Document raise C3dError {
   validate_document(self)
   validate_selection(indices, self.layout.point_count)
@@ -168,7 +171,7 @@ pub fn Document::select_points(
 ///|
 pub fn Document::select_analog(
   self : Document,
-  indices : Array[Int],
+  indices : Array[Int32],
 ) -> Document raise C3dError {
   validate_document(self)
   validate_selection(indices, self.layout.analog_channels.length())
@@ -211,7 +214,7 @@ pub fn Document::select_analog(
 fn select_analog_auxiliary(
   source : Parameters,
   target : Parameters,
-  indices : Array[Int],
+  indices : Array[Int32],
 ) -> Parameters raise C3dError {
   let mut result = target
   for name in ["GAIN", "RANGE"] {
@@ -231,7 +234,7 @@ fn select_analog_auxiliary(
         }
         result = result.set(
           "ANALOG",
-          { ..value, dimensions: [indices.length()], data: payload.to_bytes() },
+          { ..value, dimensions: [indices.length()], data: payload.to_bytes(), },
           override_locked=true,
         )
       }
@@ -243,7 +246,7 @@ fn select_analog_auxiliary(
 ///|
 pub fn Document::rename_point(
   self : Document,
-  index : Int,
+  index : Int32,
   label : String,
 ) -> Document raise C3dError {
   if index < 0 || index >= self.layout.point_count {
@@ -265,7 +268,7 @@ pub fn Document::rename_point(
 ///|
 pub fn Document::rename_analog(
   self : Document,
-  index : Int,
+  index : Int32,
   label : String,
 ) -> Document raise C3dError {
   if index < 0 || index >= self.layout.analog_channels.length() {
@@ -304,12 +307,12 @@ pub fn Document::with_events(
 pub fn Document::convert_storage(
   self : Document,
   scale : Double,
-  unsigned? : Bool = self.layout.analog_unsigned,
+  unsigned~ : Bool = self.layout.analog_unsigned,
 ) -> Document raise C3dError {
   if !finite(scale) || scale == 0.0 {
     raise C3dError::Invalid("invalid target point scale")
   }
-  let header = { ..self.header, scale: Float::from_double(scale).to_double() }
+  let header = { ..self.header, scale: Float::from_double(scale).to_double(), }
   let params = core_parameters(
     self.parameters,
     header,
@@ -323,7 +326,7 @@ pub fn Document::convert_storage(
     self.layout.first_frame,
   )
   let layout = resolve_layout(header, params)
-  let result = { ..self, header, parameters: params, layout }
+  let result = { ..self, header, parameters: params, layout, }
   validate_document(result)
   for frame in self.frames {
     let _ = encode_frame(frame, layout)
@@ -334,13 +337,13 @@ pub fn Document::convert_storage(
 ///|
 pub fn Document::replace_frame(
   self : Document,
-  index : Int,
+  index : Int32,
   frame : Frame,
 ) -> Document raise C3dError {
   if index < 0 || index >= self.frames.length() {
     raise C3dError::Invalid("replacement frame index")
   }
-  let frame = { ..frame, number: self.layout.first_frame + index }
+  let frame = { ..frame, number: self.layout.first_frame + index, }
   validate_frame(frame, self.layout)
   let frames = self.frames.copy()
   frames[index] = {
@@ -356,9 +359,9 @@ pub fn Document::select_points_by_label(
   self : Document,
   labels : Array[String],
 ) -> Document raise C3dError {
-  let indices : Array[Int] = []
+  let indices : Array[Int32] = []
   for label in labels {
-    let matches : Array[Int] = []
+    let matches : Array[Int32] = []
     for i in 0..<self.layout.point_labels.length() {
       if self.layout.point_labels[i] == label {
         matches.push(i)
@@ -377,9 +380,9 @@ pub fn Document::select_analog_by_label(
   self : Document,
   labels : Array[String],
 ) -> Document raise C3dError {
-  let indices : Array[Int] = []
+  let indices : Array[Int32] = []
   for label in labels {
-    let matches : Array[Int] = []
+    let matches : Array[Int32] = []
     for i in 0..<self.layout.analog_channels.length() {
       if self.layout.analog_channels[i].label == label {
         matches.push(i)
