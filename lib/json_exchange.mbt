@@ -358,10 +358,33 @@ pub fn parse_document_json(
     limits.max_total_values {
     raise C3dError::ResourceLimit("JSON sample count")
   }
+  let first = exact_int(
+    number_or(value, "first_frame", 1.0),
+    1,
+    2147483647,
+    "first frame",
+  )
   let frames : Array[Frame] = []
   for i in 0..<frame_values.length() {
     let frame = frame_values[i]
     ensure_keys(frame, ["number", "points", "analog"])
+    let expected_number = checked_add(first, i, "JSON frame number")
+    match json_optional(frame, "number") {
+      None => ()
+      Some(raw) => {
+        let supplied = exact_int(
+          json_number(raw),
+          1,
+          2147483647,
+          "JSON frame number",
+        )
+        if supplied != expected_number {
+          raise C3dError::Invalid(
+            "JSON frame numbers must follow first_frame consecutively",
+          )
+        }
+      }
+    }
     let point_values = json_array(json_field(frame, "points"))
     let analog_values = json_array(json_field(frame, "analog"))
     if point_values.length() != labels.length() ||
@@ -417,12 +440,6 @@ pub fn parse_document_json(
       values.map(json_string)
     }
   }
-  let first = exact_int(
-    number_or(value, "first_frame", 1.0),
-    1,
-    2147483647,
-    "first frame",
-  )
   let numbered = frames.map(frame => {
     ..frame,
     number: checked_add(first, frame.number - 1, "frame number"),
