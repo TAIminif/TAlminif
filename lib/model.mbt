@@ -114,7 +114,15 @@ pub(all) struct Event {
 
 ///|
 pub fn Event::new(time : Double, label : String) -> Event {
-  { time, label, context: "", description: "", subject: "", icon_id: 0, generic: false }
+  {
+    time,
+    label,
+    context: "",
+    description: "",
+    subject: "",
+    icon_id: 0,
+    generic: false,
+  }
 }
 
 ///|
@@ -180,14 +188,21 @@ pub fn Report::has_errors(self : Report) -> Bool {
 }
 
 ///|
-pub fn finite(value : Double) -> Bool { !value.is_inf() && !value.is_nan() }
+pub fn finite(value : Double) -> Bool {
+  !value.is_inf() && !value.is_nan()
+}
 
 ///|
 pub fn validate_limits(limits : Limits) -> Unit raise C3dError {
-  if limits.max_file_bytes < 512 || limits.max_parameter_bytes < 512 ||
-    limits.max_parameters < 1 || limits.max_frames < 0 ||
-    limits.max_points < 0 || limits.max_analog_channels < 0 ||
-    limits.max_subsamples < 1 || limits.max_total_values < 0 || limits.max_text_bytes < 0 {
+  if limits.max_file_bytes < 512 ||
+    limits.max_parameter_bytes < 512 ||
+    limits.max_parameters < 1 ||
+    limits.max_frames < 0 ||
+    limits.max_points < 0 ||
+    limits.max_analog_channels < 0 ||
+    limits.max_subsamples < 1 ||
+    limits.max_total_values < 0 ||
+    limits.max_text_bytes < 0 {
     raise C3dError::Invalid("invalid resource limits")
   }
 }

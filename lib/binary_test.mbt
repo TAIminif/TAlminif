@@ -1,6 +1,10 @@
 ///|
 fn[A] expect_error(action : () -> A raise C3dError) -> Unit raise {
-  try action() catch { _ => () } noraise { _ => fail("expected C3dError") }
+  try action() catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected C3dError")
+  }
 }
 
 ///|
