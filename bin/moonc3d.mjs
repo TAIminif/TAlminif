@@ -6,8 +6,13 @@ import { spawnSync } from 'node:child_process';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const compiled = resolve(root, '_build/js/release/build/cmd/main/main.js');
+const executable = process.platform === 'win32' ? 'moon.exe' : 'moon';
+const isolated = resolve(root, '.tools/moon-20261012');
+const toolchainHome = process.env.MOONC3D_MOON_HOME || (existsSync(resolve(isolated, 'bin', executable)) ? isolated : undefined);
 if (process.env.MOONC3D_NO_BUILD !== '1') {
-  const build = spawnSync('moon', ['build', '--target', 'js', '--release'], { cwd: root, encoding: 'utf8', windowsHide: true });
+  const moon = toolchainHome ? resolve(toolchainHome, 'bin', executable) : 'moon';
+  const env = toolchainHome ? { ...process.env, MOON_HOME: toolchainHome } : process.env;
+  const build = spawnSync(moon, ['build', '--target', 'js', '--release'], { cwd: root, env, encoding: 'utf8', windowsHide: true });
   if (build.error || build.status !== 0) {
     process.stderr.write(build.error?.message || build.stderr || build.stdout || 'MoonBit build failed\n');
     process.exit(2);

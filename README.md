@@ -102,6 +102,8 @@ let statistics = @c3d.analyze(reader)
 
 失败操作抛出 `@c3d.C3dError`，用 `.kind()` / `.message()` 获取诊断。`Frame.analog` 外层是通道，内层是该帧子采样；库中的模拟量均为校准后的物理值。用户文本用 UTF-8，参数标识符用 ASCII 字母、数字或下划线。
 
+在本工作区，旧的系统工具链保持原样，新版安装在 `.tools/moon-20261012`。CLI 自动使用存在的隔离工具链，也可通过 `MOONC3D_MOON_HOME` 指定其他目录。Windows 运行 `pwsh -File scripts/verify.ps1` 可复现全部本地验证；已有本机 C 编译器时可加 `-Native`。隔离工具链和依赖不会发布到仓库或库包。
+
 语义和上限见 [DESIGN.md](docs/DESIGN.md)。公共 API 可运行 `moon info` 查看 [lib/pkg.generated.mbti](lib/pkg.generated.mbti)。
 
 ## 验证与来源

@@ -45,7 +45,7 @@ def oracle(path):
         }
 
 
-def fixture(path, scale):
+def fixture(path, scale, include_events=True):
     writer = c3d.Writer(point_rate=100, analog_rate=300, point_scale=scale, gen_scale=2.0)
     writer.set_start_frame(101)
     writer.set_point_labels(["Heel", "Toe", "Hip"])
@@ -54,10 +54,11 @@ def fixture(path, scale):
     writer.set_analog_offsets([10, -4])
     custom = writer.add_group(10, "CUSTOM", "independent test metadata")
     custom.add_array("MATRIX", "column-major payload", np.array([[1, -2], [300, -400]], dtype=np.int16))
-    events = writer.add_group(20, "EVENT", "test events")
-    events.add("USED", "count", 2, "<H", 2)
-    events.add("TIMES", "minutes seconds", 4, "", struct.pack("<4f", 0, 1.035, 0, 1.095), 2, 2)
-    events.add_str("LABELS", "event labels", "hit off ", 4, 2)
+    if include_events:
+        events = writer.add_group(20, "EVENT", "test events")
+        events.add("USED", "count", 2, "<H", 2)
+        events.add("TIMES", "minutes seconds", 4, "", struct.pack("<4f", 0, 1.035, 0, 1.095), 2, 2)
+        events.add_str("LABELS", "event labels", "hit off ", 4, 2)
     frames = []
     for i in range(12):
         points = np.array([
@@ -105,7 +106,12 @@ def compare_files(actual, expected, indices=None, analog_indices=None, start=0, 
 
 
 def run():
-    subprocess.run(["moon", "build", "--target", "js", "--release"], cwd=ROOT, check=True)
+    build = subprocess.run(
+        ["node", str(ROOT / "bin" / "moonc3d.mjs"), "help"], cwd=ROOT,
+        env={**os.environ, "MOONC3D_NO_BUILD": "0"}, capture_output=True,
+        text=True, encoding="utf-8", timeout=60,
+    )
+    assert build.returncode == 0, build.stderr
     (ROOT / "artifacts").mkdir(exist_ok=True)
     folder = Path(tempfile.mkdtemp(prefix="interop-", dir=ROOT / "artifacts"))
     checks = []
@@ -156,6 +162,38 @@ def run():
             if kind == "analog":
                 np.testing.assert_allclose(float(records[2]["time"]), 1.0 + 1 / 300, atol=1e-8)
         checks.append(f"{tag}: decode, encode, crop, select, conversion, statistics, CSV")
+    # Unsigned analog offsets above 32767 are independently decoded and checked on wire.
+    document = json.loads((folder / "integer.json").read_text(encoding="utf-8"))
+    document["analog_unsigned"] = True
+    document["analog_channels"][0]["offset"] = 50000
+    document["analog_channels"][1]["offset"] = 45000
+    unsigned_json = folder / "unsigned.json"
+    unsigned_json.write_text(json.dumps(document), encoding="utf-8")
+    unsigned = folder / "unsigned.c3d"
+    cli("pack", unsigned_json, unsigned)
+    compare_files(oracle(unsigned), expected)
+    raw_unsigned = unsigned.read_bytes()
+    data_offset = (struct.unpack_from("<H", raw_unsigned, 16)[0] - 1) * 512
+    assert struct.unpack_from("<HH", raw_unsigned, data_offset + 3 * 8) == (50000, 45000)
+    # Independently encode one legacy header event and verify migration to EVENT parameters.
+    legacy = folder / "legacy.c3d"
+    fixture(legacy, -0.25, include_events=False)
+    legacy_raw = bytearray(legacy.read_bytes())
+    struct.pack_into("<HH", legacy_raw, 298, 12345, 1)
+    struct.pack_into("<f", legacy_raw, 304, 1.035)
+    legacy_raw[376] = 1
+    legacy_raw[396:400] = b"HIT "
+    legacy.write_bytes(legacy_raw)
+    assert cli("inspect", legacy)["events"][0]["label"] == "HIT"
+    legacy_json = folder / "legacy.json"
+    cli("dump", legacy, legacy_json)
+    migrated = folder / "migrated.c3d"
+    cli("pack", legacy_json, migrated)
+    with migrated.open("rb") as handle:
+        migrated_reader = c3d.Reader(handle)
+        assert migrated_reader.get("EVENT:USED").uint16_value == 1
+        np.testing.assert_allclose(migrated_reader.get("EVENT:TIMES").float_array.flatten(), [0, 1.035], atol=1e-6)
+    checks.append("unsigned analog offsets/wire values and legacy header event migration")
     # Format failures must use structured diagnostics and leave no output behind.
     raw = (folder / "python-float.c3d").read_bytes()
     truncated = folder / "truncated.c3d"
