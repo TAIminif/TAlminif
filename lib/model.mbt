@@ -15,6 +15,12 @@ pub fn C3dError::message(self : C3dError) -> String {
 }
 
 ///|
+/// Construct an invalid-input error for application adapters.
+pub fn invalid(message : String) -> C3dError {
+  C3dError::Invalid(message)
+}
+
+///|
 pub fn C3dError::kind(self : C3dError) -> String {
   match self {
     Invalid(_) => "invalid"

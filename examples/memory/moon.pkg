@@ -1,0 +1,5 @@
+import {
+  "TAIminif/TAlminif/lib" @c3d,
+}
+
+pkgtype(kind: "executable")
