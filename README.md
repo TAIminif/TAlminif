@@ -6,7 +6,7 @@ MoonC3D 是用 MoonBit 编写的 C3D 动作捕捉文件工具库。它将三维�
 
 模块名：`TAIminif/TAlminif`；库包：`TAIminif/TAlminif/lib`；许可证：[MIT](LICENSE)。仓库名中第三个字符是小写 `l`。
 
-作者：郭康泰（历史署名：许博 / Xu Bo）；GitHub：[TAIminif](https://github.com/TAIminif)。历史署名通过 [`.mailmap`](.mailmap) 归并，原始提交记录保留。
+作者：郭康泰；GitHub：[TAIminif](https://github.com/TAIminif)。
 
 ## 支持范围
 
