@@ -253,7 +253,9 @@ pub fn resolve_frame_range(
   if trial_count is Some(value) && value != count {
     raise C3dError::Invalid("TRIAL range disagrees with frame count")
   }
-  let _ = checked_add(first, count, "frame range")
+  if count > 0 {
+    let _ = checked_add(first, count - 1, "last trial frame")
+  }
   (first, count)
 }
 
@@ -283,6 +285,114 @@ fn numeric_vector(
     .map(x => x.to_double())
   } else {
     parameters.read_real_series(group, name, count, fallback~)
+  }
+}
+
+///|
+// A stored REAL*4 rate represents an interval of possible source values, not
+// an exact decimal rate. Use its rounding cell instead of a relative epsilon.
+// The two endpoints include ties only when its significand is even.
+fn rate_rounding_interval(
+  value : Double,
+  processor : Processor,
+) -> (Double, Double, Bool, Bool) {
+  let exponent = ((value.reinterpret_as_uint64() >> 52) & 2047UL).to_int() -
+    1023
+  let step_exponent = if processor == Dec {
+    exponent - 23
+  } else {
+    (exponent - 23).max(-149)
+  }
+  let step = processor_power_of_two(step_exponent)
+  let even = (value / step).to_int() % 2 == 0
+  let minimum_normal_exponent = if processor == Dec { -128 } else { -126 }
+  let previous_step = if exponent > minimum_normal_exponent &&
+    value == processor_power_of_two(exponent) {
+    step * 0.5
+  } else {
+    step
+  }
+  let lower = if processor == Dec && value == processor_power_of_two(-128) {
+    // VAX encoding deliberately rejects every positive underflow to zero.
+    value
+  } else {
+    value - previous_step * 0.5
+  }
+  (lower, value + step * 0.5, even, even)
+}
+
+///|
+fn rate_parameter_interval(
+  parameter : Parameter,
+  value : Double,
+) -> (Double, Double, Bool, Bool) {
+  if parameter.data_type == 4 {
+    rate_rounding_interval(value, parameter.processor)
+  } else {
+    // Integer parameters have no floating point rounding uncertainty.
+    (value, value, true, true)
+  }
+}
+
+///|
+fn rate_intervals_overlap(
+  left : (Double, Double, Bool, Bool),
+  right : (Double, Double, Bool, Bool),
+) -> Bool {
+  let (left_min, left_max, left_min_closed, left_max_closed) = left
+  let (right_min, right_max, right_min_closed, right_max_closed) = right
+  (
+    left_min < right_max ||
+    (left_min == right_max && left_min_closed && right_max_closed)
+  ) &&
+  (
+    right_min < left_max ||
+    (right_min == left_max && right_min_closed && left_max_closed)
+  )
+}
+
+///|
+fn analog_rate_agrees(
+  header : Header,
+  parameters : Parameters,
+  point_rate : Double,
+  analog_rate : Double,
+) -> Bool raise C3dError {
+  let mut point_interval = rate_rounding_interval(point_rate, header.processor)
+  if parameters.get("POINT", "RATE") is Some(parameter) {
+    let (lower, upper, lower_closed, upper_closed) = point_interval
+    let (other_lower, other_upper, other_lower_closed, other_upper_closed) = rate_parameter_interval(
+      parameter, point_rate,
+    )
+    point_interval = (
+      lower.max(other_lower),
+      upper.min(other_upper),
+      if lower > other_lower {
+        lower_closed
+      } else if lower < other_lower {
+        other_lower_closed
+      } else {
+        lower_closed && other_lower_closed
+      },
+      if upper < other_upper {
+        upper_closed
+      } else if upper > other_upper {
+        other_upper_closed
+      } else {
+        upper_closed && other_upper_closed
+      },
+    )
+  }
+  match parameters.get("ANALOG", "RATE") {
+    None => true
+    Some(parameter) => {
+      let (lower, upper, lower_closed, upper_closed) = point_interval
+      let samples = header.analog_subsamples.to_double()
+      rate_intervals_overlap(
+        (lower * samples, upper * samples, lower_closed, upper_closed),
+        rate_parameter_interval(parameter, analog_rate),
+      )
+    }
   }
 }
 
@@ -385,15 +495,10 @@ pub fn resolve_layout(
       "RATE",
       point_rate * header.analog_subsamples.to_double(),
     )
-    let subsamples = exact_int(
-      analog_rate / point_rate,
-      1,
-      limits.max_subsamples,
-      "analog/point rate ratio",
-    )
+    let subsamples = header.analog_subsamples
     if !finite(analog_rate) ||
-      analog_rate < 0.0 ||
-      subsamples != header.analog_subsamples {
+      analog_rate <= 0.0 ||
+      !analog_rate_agrees(header, parameters, point_rate, analog_rate) {
       raise C3dError::Invalid("analog rate and header subsamples disagree")
     }
     let analog_format = optional_text(parameters, "ANALOG", "FORMAT", "SIGNED")

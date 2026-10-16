@@ -204,6 +204,7 @@ pub fn parse_parameters_json(
   value : Json,
   limits~ : Limits = Limits::default(),
 ) -> Parameters raise C3dError {
+  validate_limits(limits)
   ensure_keys(value, ["groups", "values"])
   let group_values = json_array(json_field(value, "groups"))
   let parameter_values = json_array(json_field(value, "values"))
@@ -334,12 +335,92 @@ pub fn parse_document_json(
   if label_values.length() > limits.max_points {
     raise C3dError::ResourceLimit("JSON point count")
   }
-  let labels = label_values.map(json_string)
+  let mut text_bytes = 0
+  let labels : Array[String] = []
+  for value in label_values {
+    let text = json_string(value)
+    text_bytes = add_utf8_text_bytes(
+      text_bytes,
+      text,
+      limits.max_text_bytes,
+      "JSON semantic text",
+    )
+    labels.push(text)
+  }
   let channel_values = json_array(json_field(value, "analog_channels"))
   if channel_values.length() > limits.max_analog_channels {
     raise C3dError::ResourceLimit("JSON analog count")
   }
-  let channels = channel_values.map(parse_channel_json)
+  let channels : Array[Channel] = []
+  for value in channel_values {
+    let channel = parse_channel_json(value)
+    for text in [channel.label, channel.description, channel.unit] {
+      text_bytes = add_utf8_text_bytes(
+        text_bytes,
+        text,
+        limits.max_text_bytes,
+        "JSON semantic text",
+      )
+    }
+    channels.push(channel)
+  }
+  let unit = string_or(value, "point_unit", "mm")
+  text_bytes = add_utf8_text_bytes(
+    text_bytes,
+    unit,
+    limits.max_text_bytes,
+    "JSON semantic text",
+  )
+  let descriptions : Array[String] = match
+    json_optional(value, "point_descriptions") {
+    None => Array::make(labels.length(), "")
+    Some(raw) => {
+      let values = json_array(raw)
+      if values.length() != labels.length() {
+        raise C3dError::Invalid("point description count")
+      }
+      let result : Array[String] = []
+      for value in values {
+        let text = json_string(value)
+        text_bytes = add_utf8_text_bytes(
+          text_bytes,
+          text,
+          limits.max_text_bytes,
+          "JSON semantic text",
+        )
+        result.push(text)
+      }
+      result
+    }
+  }
+  let events : Array[Event] = match json_optional(value, "events") {
+    None => []
+    Some(raw) => {
+      let values = json_array(raw)
+      if values.length() > 255 {
+        raise C3dError::ResourceLimit("JSON events")
+      }
+      let result : Array[Event] = []
+      for value in values {
+        let event = parse_event_json(value)
+        for
+          text in [event.label, event.context, event.description, event.subject] {
+          text_bytes = add_utf8_text_bytes(
+            text_bytes,
+            text,
+            limits.max_text_bytes,
+            "JSON semantic text",
+          )
+        }
+        result.push(event)
+      }
+      result
+    }
+  }
+  let supplied_parameters = match json_optional(value, "parameters") {
+    None => None
+    Some(raw) => Some(parse_parameters_json(raw, limits~))
+  }
   let frame_values = json_array(json_field(value, "frames"))
   if frame_values.length() > limits.max_frames {
     raise C3dError::ResourceLimit("JSON frame count")
@@ -415,38 +496,19 @@ pub fn parse_document_json(
     analog_subsamples=subsamples,
     analog_global_scale=number_or(value, "analog_global_scale", 1.0),
     analog_unsigned=bool_or(value, "analog_unsigned", false),
-    point_unit=string_or(value, "point_unit", "mm"),
+    point_unit=unit,
     processor=processor_from_name(string_or(value, "processor", "intel")),
+    limits~,
   )
-  let parameters = match json_optional(value, "parameters") {
+  let parameters = match supplied_parameters {
     None => base.parameters
-    Some(raw) => parse_parameters_json(raw, limits~)
-  }
-  let events = match json_optional(value, "events") {
-    None => []
-    Some(raw) => {
-      let values = json_array(raw)
-      if values.length() > 255 {
-        raise C3dError::ResourceLimit("JSON events")
-      }
-      values.map(parse_event_json)
-    }
-  }
-  let descriptions = match json_optional(value, "point_descriptions") {
-    None => base.layout.point_descriptions
-    Some(raw) => {
-      let values = json_array(raw)
-      if values.length() != labels.length() {
-        raise C3dError::Invalid("point description count")
-      }
-      values.map(json_string)
-    }
+    Some(parameters) => parameters
   }
   let numbered = frames.map(frame => {
     ..frame,
     number: checked_add(first, frame.number - 1, "frame number"),
   })
-  rebuild(
+  let result = rebuild(
     { ..base, parameters, },
     numbered,
     labels,
@@ -454,7 +516,10 @@ pub fn parse_document_json(
     channels,
     first,
     events,
+    limits~,
   )
+  validate_document(result, limits~)
+  result
 }
 
 ///|
@@ -462,9 +527,8 @@ pub fn import_json(
   text : String,
   limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
-  if text.length() > limits.max_file_bytes {
-    raise C3dError::ResourceLimit("JSON input size")
-  }
+  validate_limits(limits)
+  let _ = add_utf8_text_bytes(0, text, limits.max_file_bytes, "JSON input size")
   check_json_nesting(text, 64)
   let parsed = @json.parse(text[:]) catch {
     _ => raise C3dError::Invalid("invalid JSON syntax or nesting")

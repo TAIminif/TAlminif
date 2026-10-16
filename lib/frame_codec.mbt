@@ -225,6 +225,58 @@ pub fn encode_frame(frame : Frame, layout : Layout) -> Bytes raise C3dError {
 }
 
 ///|
+// Index frame_count is the exclusive trial endpoint, also used by time crops.
+// Convert before adding so a valid last frame at Int32::max_value has a valid
+// floating-point exclusive endpoint as well.
+fn frame_time_boundary(layout : Layout, index : Int32) -> Double raise C3dError {
+  if index < 0 || index > layout.frame_count {
+    raise C3dError::Invalid("frame time boundary outside range")
+  }
+  if !finite(layout.point_rate) || layout.point_rate <= 0.0 {
+    raise C3dError::Invalid("invalid point rate for frame time")
+  }
+  (layout.first_frame.to_double() - 1.0 + index.to_double()) / layout.point_rate
+}
+
+///|
+// Search the same rounded frame timestamps returned by time_at rather than
+// inverting their floating-point division with multiplication and ceil/floor.
+fn frame_time_lower_bound(
+  layout : Layout,
+  time : Double,
+) -> Int32 raise C3dError {
+  let mut low = 0
+  let mut high = layout.frame_count
+  while low < high {
+    let middle = low + (high - low) / 2
+    if frame_time_boundary(layout, middle) < time {
+      low = middle + 1
+    } else {
+      high = middle
+    }
+  }
+  low
+}
+
+///|
+fn frame_time_upper_bound(
+  layout : Layout,
+  time : Double,
+) -> Int32 raise C3dError {
+  let mut low = 0
+  let mut high = layout.frame_count
+  while low < high {
+    let middle = low + (high - low) / 2
+    if frame_time_boundary(layout, middle) <= time {
+      low = middle + 1
+    } else {
+      high = middle
+    }
+  }
+  low
+}
+
+///|
 pub fn Layout::time_at(
   self : Layout,
   index : Int32,
@@ -238,7 +290,7 @@ pub fn Layout::time_at(
     (self.analog_subsamples > 0 && subsample >= self.analog_subsamples) {
     raise C3dError::Invalid("subsample time index outside range")
   }
-  let start = (self.first_frame - 1 + index).to_double() / self.point_rate
+  let start = frame_time_boundary(self, index)
   if subsample == 0 {
     start
   } else {
@@ -251,12 +303,11 @@ pub fn Layout::index_at(self : Layout, time : Double) -> Int32 raise C3dError {
   if !finite(time) {
     raise C3dError::Invalid("non-finite time")
   }
-  let relative = time * self.point_rate - (self.first_frame - 1).to_double()
-  let index = relative.floor()
-  if index < 0.0 || index >= self.frame_count.to_double() {
+  if time < frame_time_boundary(self, 0) ||
+    time >= frame_time_boundary(self, self.frame_count) {
     raise C3dError::Invalid("time outside trial")
   }
-  index.to_int()
+  frame_time_upper_bound(self, time) - 1
 }
 
 ///|

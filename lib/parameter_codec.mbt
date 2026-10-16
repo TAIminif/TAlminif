@@ -83,6 +83,7 @@ pub fn validate_parameters(
   let names : Map[String, Bool] = Map([])
   let keys : Map[String, Bool] = Map([])
   let mut bytes = 0
+  let mut text_bytes = 0
   for group in parameters.groups {
     if group.id < 1 || group.id > 127 {
       raise C3dError::Invalid("group ID outside range")
@@ -97,6 +98,16 @@ pub fn validate_parameters(
     ids[group.id] = true
     names[name] = true
     bytes = checked_add(bytes, group.description.length(), "parameter metadata")
+    text_bytes = add_raw_text_bytes(
+      text_bytes,
+      name.length(),
+      limits.max_text_bytes,
+    )
+    text_bytes = add_raw_text_bytes(
+      text_bytes,
+      group.description.length(),
+      limits.max_text_bytes,
+    )
   }
   for value in parameters.values {
     validate_parameter(value, limits~)
@@ -108,6 +119,23 @@ pub fn validate_parameters(
       raise C3dError::Invalid("duplicate parameter in group")
     }
     keys[key] = true
+    text_bytes = add_raw_text_bytes(
+      text_bytes,
+      value.name.length(),
+      limits.max_text_bytes,
+    )
+    text_bytes = add_raw_text_bytes(
+      text_bytes,
+      value.description.length(),
+      limits.max_text_bytes,
+    )
+    if value.data_type == -1 {
+      text_bytes = add_raw_text_bytes(
+        text_bytes,
+        value.data.length(),
+        limits.max_text_bytes,
+      )
+    }
     bytes = checked_add(
       bytes,
       value.data.length() + value.description.length(),

@@ -7,6 +7,7 @@ pub fn rebuild(
   channels : Array[Channel],
   first_frame : Int32,
   events : Array[Event],
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   let analog_values = checked_mul(
     document.layout.analog_subsamples,
@@ -53,9 +54,9 @@ pub fn rebuild(
     events,
     processor=header.processor,
   )
-  let layout = resolve_layout(header, parameters)
+  let layout = resolve_layout(header, parameters, limits~)
   let result = { header, parameters, layout, frames, events, }
-  validate_document(result)
+  validate_document(result, limits~)
   result
 }
 
@@ -65,21 +66,20 @@ pub fn Document::crop(
   start : Int32,
   end : Int32,
   rebase~ : Bool = true,
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
-  validate_document(self)
+  validate_document(self, limits~)
   if start < 0 || end <= start || end > self.frames.length() {
     raise C3dError::Invalid("crop requires a nonempty half-open frame range")
   }
-  let old_start = (self.layout.first_frame - 1 + start).to_double() /
-    self.layout.point_rate
-  let old_end = (self.layout.first_frame - 1 + end).to_double() /
-    self.layout.point_rate
+  let old_start = frame_time_boundary(self.layout, start)
+  let old_end = frame_time_boundary(self.layout, end)
   let first = if rebase { 1 } else { self.layout.first_frame + start }
   let frames : Array[Frame] = []
   for i in start..<end {
     let frame = self.frames[i]
     frames.push({
-      number: first + i - start,
+      number: checked_add(first, i - start, "cropped frame number"),
       points: frame.points.copy(),
       analog: frame.analog.map(channel => channel.copy()),
     })
@@ -105,6 +105,7 @@ pub fn Document::crop(
     self.layout.analog_channels,
     first,
     events,
+    limits~,
   )
 }
 
@@ -114,20 +115,23 @@ pub fn Document::crop_time(
   start : Double,
   end : Double,
   rebase~ : Bool = true,
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   if !finite(start) || !finite(end) || end <= start {
     raise C3dError::Invalid("invalid crop time range")
   }
-  let origin = (self.layout.first_frame - 1).to_double() /
-    self.layout.point_rate
-  let first = ((start - origin) * self.layout.point_rate).ceil()
-  let last = ((end - origin) * self.layout.point_rate).ceil()
-  if first < 0.0 || last > self.frames.length().to_double() || first >= last {
-    raise C3dError::Invalid(
-      "time crop outside trial or contains no frame starts",
-    )
+  validate_document(self, limits~)
+  let origin = frame_time_boundary(self.layout, 0)
+  let stop = frame_time_boundary(self.layout, self.layout.frame_count)
+  if start < origin || end > stop {
+    raise C3dError::Invalid("time crop outside trial")
   }
-  self.crop(first.to_int(), last.to_int(), rebase~)
+  let first = frame_time_lower_bound(self.layout, start)
+  let last = frame_time_lower_bound(self.layout, end)
+  if first >= last {
+    raise C3dError::Invalid("time crop contains no frame starts")
+  }
+  self.crop(first, last, rebase~, limits~)
 }
 
 ///|
@@ -151,8 +155,9 @@ fn validate_selection(
 pub fn Document::select_points(
   self : Document,
   indices : Array[Int32],
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
-  validate_document(self)
+  validate_document(self, limits~)
   validate_selection(indices, self.layout.point_count)
   let labels = indices.map(index => self.layout.point_labels[index])
   let descriptions = indices.map(index => self.layout.point_descriptions[index])
@@ -169,6 +174,7 @@ pub fn Document::select_points(
     self.layout.analog_channels,
     self.layout.first_frame,
     self.events.copy(),
+    limits~,
   )
 }
 
@@ -176,8 +182,9 @@ pub fn Document::select_points(
 pub fn Document::select_analog(
   self : Document,
   indices : Array[Int32],
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
-  validate_document(self)
+  validate_document(self, limits~)
   validate_selection(indices, self.layout.analog_channels.length())
   if optional_number(
       self.parameters,
@@ -205,13 +212,16 @@ pub fn Document::select_analog(
     channels,
     self.layout.first_frame,
     self.events.copy(),
+    limits~,
   )
   let parameters = select_analog_auxiliary(
     self.parameters,
     result.parameters,
     indices,
   )
-  { ..result, parameters, }
+  let result = { ..result, parameters, }
+  validate_document(result, limits~)
+  result
 }
 
 ///|
@@ -287,6 +297,7 @@ pub fn Document::rename_point(
   self : Document,
   index : Int32,
   label : String,
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   if index < 0 || index >= self.layout.point_count {
     raise C3dError::Invalid("marker index outside range")
@@ -301,6 +312,7 @@ pub fn Document::rename_point(
     self.layout.analog_channels,
     self.layout.first_frame,
     self.events.copy(),
+    limits~,
   )
 }
 
@@ -309,6 +321,7 @@ pub fn Document::rename_analog(
   self : Document,
   index : Int32,
   label : String,
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   if index < 0 || index >= self.layout.analog_channels.length() {
     raise C3dError::Invalid("analog index outside range")
@@ -323,6 +336,7 @@ pub fn Document::rename_analog(
     channels,
     self.layout.first_frame,
     self.events.copy(),
+    limits~,
   )
 }
 
@@ -330,6 +344,7 @@ pub fn Document::rename_analog(
 pub fn Document::with_events(
   self : Document,
   events : Array[Event],
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   rebuild(
     self,
@@ -339,6 +354,7 @@ pub fn Document::with_events(
     self.layout.analog_channels,
     self.layout.first_frame,
     events.copy(),
+    limits~,
   )
 }
 
@@ -347,6 +363,7 @@ pub fn Document::convert_storage(
   self : Document,
   scale : Double,
   unsigned~ : Bool = self.layout.analog_unsigned,
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   if !finite(scale) || scale == 0.0 {
     raise C3dError::Invalid("invalid target point scale")
@@ -367,9 +384,9 @@ pub fn Document::convert_storage(
     self.frames.length(),
     self.layout.first_frame,
   )
-  let layout = resolve_layout(header, params)
+  let layout = resolve_layout(header, params, limits~)
   let result = { ..self, header, parameters: params, layout, }
-  validate_document(result)
+  validate_document(result, limits~)
   for frame in self.frames {
     let _ = encode_frame(frame, layout)
   }
@@ -381,6 +398,7 @@ pub fn Document::replace_frame(
   self : Document,
   index : Int32,
   frame : Frame,
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   if index < 0 || index >= self.frames.length() {
     raise C3dError::Invalid("replacement frame index")
@@ -393,13 +411,16 @@ pub fn Document::replace_frame(
     points: frame.points.copy(),
     analog: frame.analog.map(a => a.copy()),
   }
-  { ..self, frames, }
+  let result = { ..self, frames, }
+  validate_document(result, limits~)
+  result
 }
 
 ///|
 pub fn Document::select_points_by_label(
   self : Document,
   labels : Array[String],
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   let indices : Array[Int32] = []
   for label in labels {
@@ -414,13 +435,14 @@ pub fn Document::select_points_by_label(
     }
     indices.push(matches[0])
   }
-  self.select_points(indices)
+  self.select_points(indices, limits~)
 }
 
 ///|
 pub fn Document::select_analog_by_label(
   self : Document,
   labels : Array[String],
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
   let indices : Array[Int32] = []
   for label in labels {
@@ -435,5 +457,5 @@ pub fn Document::select_analog_by_label(
     }
     indices.push(matches[0])
   }
-  self.select_analog(indices)
+  self.select_analog(indices, limits~)
 }

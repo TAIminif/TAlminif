@@ -111,7 +111,7 @@ test "floating analog conversion uses the serialized target calibration" {
 }
 
 ///|
-test "target rounding that breaks the analog rate ratio is rejected at write" {
+test "target rounding within the analog rate rounding cells remains valid" {
   let channel : @lib.Channel = {
     label: "A",
     description: "",
@@ -155,6 +155,9 @@ test "target rounding that breaks the analog rate ratio is rejected at write" {
   let layout = @lib.resolve_layout(header, parameters)
   let document = { ..base, header, parameters, layout, }
   assert_eq(@lib.read(@lib.write(document)).layout.analog_subsamples, 2)
-  expect_error(() => @lib.write(document, processor=Intel))
-  expect_error(() => @lib.write(document, processor=Mips))
+  for processor in [@lib.Processor::Intel, Mips] {
+    let decoded = @lib.read(@lib.write(document, processor~))
+    assert_eq(decoded.layout.analog_subsamples, 2)
+    assert_eq(decoded.frames[0].analog[0], [1.0, 2.0])
+  }
 }

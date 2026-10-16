@@ -145,7 +145,7 @@ pub fn read_parameters(Bytes, Int, limits? : Limits) -> Parameters raise C3dErro
 
 pub fn read_processor(Bytes, Int) -> Processor raise C3dError
 
-pub fn rebuild(Document, Array[Frame], Array[String], Array[String], Array[Channel], Int, Array[Event]) -> Document raise C3dError
+pub fn rebuild(Document, Array[Frame], Array[String], Array[String], Array[Channel], Int, Array[Event], limits? : Limits) -> Document raise C3dError
 
 pub fn report_json(Report) -> Json
 
@@ -182,6 +182,8 @@ pub fn validate_limits(Limits) -> Unit raise C3dError
 pub fn validate_parameter(Parameter, limits? : Limits) -> Unit raise C3dError
 
 pub fn validate_parameters(Parameters, limits? : Limits) -> Unit raise C3dError
+
+pub fn validate_semantic_text(Layout, Array[Event], Limits) -> Unit raise C3dError
 
 pub fn write(Document, limits? : Limits, processor? : Processor) -> Bytes raise C3dError
 
@@ -264,21 +266,21 @@ pub(all) struct Document {
   frames : Array[Frame]
   events : Array[Event]
 } derive(Eq, @debug.Debug)
-pub fn Document::convert_storage(Self, Double, unsigned? : Bool) -> Self raise C3dError
-pub fn Document::crop(Self, Int, Int, rebase? : Bool) -> Self raise C3dError
-pub fn Document::crop_time(Self, Double, Double, rebase? : Bool) -> Self raise C3dError
+pub fn Document::convert_storage(Self, Double, unsigned? : Bool, limits? : Limits) -> Self raise C3dError
+pub fn Document::crop(Self, Int, Int, rebase? : Bool, limits? : Limits) -> Self raise C3dError
+pub fn Document::crop_time(Self, Double, Double, rebase? : Bool, limits? : Limits) -> Self raise C3dError
 pub fn Document::equal(Self, Self) -> Bool
-pub fn Document::new(Array[String], Array[Channel], Array[Frame], point_rate? : Double, scale? : Double, analog_subsamples? : Int, analog_global_scale? : Double, analog_unsigned? : Bool, point_unit? : String, processor? : Processor) -> Self raise C3dError
+pub fn Document::new(Array[String], Array[Channel], Array[Frame], point_rate? : Double, scale? : Double, analog_subsamples? : Int, analog_global_scale? : Double, analog_unsigned? : Bool, point_unit? : String, processor? : Processor, limits? : Limits) -> Self raise C3dError
 pub fn Document::not_equal(Self, Self) -> Bool
-pub fn Document::rename_analog(Self, Int, String) -> Self raise C3dError
-pub fn Document::rename_point(Self, Int, String) -> Self raise C3dError
-pub fn Document::replace_frame(Self, Int, Frame) -> Self raise C3dError
-pub fn Document::select_analog(Self, Array[Int]) -> Self raise C3dError
-pub fn Document::select_analog_by_label(Self, Array[String]) -> Self raise C3dError
-pub fn Document::select_points(Self, Array[Int]) -> Self raise C3dError
-pub fn Document::select_points_by_label(Self, Array[String]) -> Self raise C3dError
+pub fn Document::rename_analog(Self, Int, String, limits? : Limits) -> Self raise C3dError
+pub fn Document::rename_point(Self, Int, String, limits? : Limits) -> Self raise C3dError
+pub fn Document::replace_frame(Self, Int, Frame, limits? : Limits) -> Self raise C3dError
+pub fn Document::select_analog(Self, Array[Int], limits? : Limits) -> Self raise C3dError
+pub fn Document::select_analog_by_label(Self, Array[String], limits? : Limits) -> Self raise C3dError
+pub fn Document::select_points(Self, Array[Int], limits? : Limits) -> Self raise C3dError
+pub fn Document::select_points_by_label(Self, Array[String], limits? : Limits) -> Self raise C3dError
 pub fn Document::to_repr(Self) -> @debug.Repr
-pub fn Document::with_events(Self, Array[Event]) -> Self raise C3dError
+pub fn Document::with_events(Self, Array[Event], limits? : Limits) -> Self raise C3dError
 
 pub(all) struct Event {
   time : Double

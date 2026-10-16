@@ -23,6 +23,7 @@ pub fn Reader::new(
   )
   check_range(data, layout.data_offset, length)
   let events = read_events(header, parameters)
+  validate_semantic_text(layout, events, limits)
   { data, header, parameters, layout, events, position: 0, }
 }
 
@@ -138,7 +139,14 @@ pub fn Document::new(
   analog_unsigned~ : Bool = false,
   point_unit~ : String = "mm",
   processor~ : Processor = Intel,
+  limits~ : Limits = Limits::default(),
 ) -> Document raise C3dError {
+  validate_limits(limits)
+  if point_labels.length() > limits.max_points ||
+    analog_channels.length() > limits.max_analog_channels ||
+    frames.length() > limits.max_frames {
+    raise C3dError::ResourceLimit("document dimensions")
+  }
   let header = Header::new(
     point_labels.length(),
     point_rate,
@@ -167,9 +175,9 @@ pub fn Document::new(
     frames.length(),
     1,
   )
-  let layout = resolve_layout(header, parameters)
+  let layout = resolve_layout(header, parameters, limits~)
   let document = { header, parameters, layout, frames, events: [], }
-  validate_document(document)
+  validate_document(document, limits~)
   document
 }
 
@@ -179,6 +187,7 @@ pub fn validate_document(
   limits~ : Limits = Limits::default(),
 ) -> Unit raise C3dError {
   let resolved = resolve_layout(document.header, document.parameters, limits~)
+  validate_semantic_text(resolved, document.events, limits)
   if resolved != document.layout {
     raise C3dError::Invalid("document cached layout differs from metadata")
   }

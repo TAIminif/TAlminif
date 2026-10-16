@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1
+
+- Correct decimal time crops and timestamp-to-frame lookup using the same frame-time grid, including high trial frame numbers.
+- Accept fractional point/analog rates within exact REAL*4 rounding cells while rejecting incompatible sampling metadata.
+- Honor caller limits through construction, JSON import and editing; enforce UTF-8 text budgets and JSON input byte limits.
+- Add focused regressions for the reviewed failures, precision endpoints and expanded caller limits.
+- Fix first-clone official fixture download instructions and describe GitHub source consumption through a local workspace.
+
 ## 0.2.0
 
 - Intel, DEC/VAX and SGI/MIPS headers, parameters, events and frame read/write; explicit CLI encoding conversion.

@@ -1,6 +1,6 @@
 {
   "date": "2026-10-16",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "toolchain": {
     "moon": "0.1.20261012",
     "moonc": "v0.10.15+943464bfa"
@@ -10,12 +10,12 @@
     "wasm",
     "js"
   ],
-  "tests_per_local_backend": 67,
+  "tests_per_local_backend": 82,
   "source_count": {
     "method": "nonblank noncomment physical .mbt lines; generated interfaces excluded",
     "totals": {
-      "production": 4890,
-      "tests": 1628,
+      "production": 5233,
+      "tests": 2001,
       "examples": 14
     }
   },
@@ -304,5 +304,37 @@
     "c3d": "0.6.0",
     "numpy": "2.2.6"
   },
-  "reproduce": "pwsh -File scripts/verify.ps1 -Python <Python3.11 executable>"
+  "reproduce": "pwsh -File scripts/verify.ps1 -Python <Python3.11 executable>",
+  "review_fixes": {
+    "result": "passed",
+    "time_crop_expected_original_indices": [
+      7,
+      8
+    ],
+    "time_crop_actual_original_indices": [
+      7,
+      8
+    ],
+    "exclusive_end_expected_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "fractional_point_rate_hz": 59.94,
+    "analog_subsamples": 3,
+    "fractional_rate_processors": [
+      "intel",
+      "dec",
+      "mips"
+    ],
+    "fractional_rate_oracle": "independent Python wire decoder",
+    "limits_regressions": "parameter count, parameter/semantic text, UTF-8 input bytes, raised subsample limit",
+    "source_consumer": "separate audit/consumer moon.work application imports public library; all three codecs passed",
+    "delivery": "GitHub source only; no Mooncakes login or publication required by current user scope",
+    "oracle_note": "py-c3d 0.6.0 has an exact-ratio assertion that rejects some fractional-rate/processor combinations; those cases use the independent wire decoder"
+  }
 }

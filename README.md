@@ -8,7 +8,7 @@ MoonC3D 是用 MoonBit 编写的 C3D 动作捕捉文件工具库。它将三维�
 
 ## 支持范围
 
-| 功能 | 0.2.0 范围 |
+| 功能 | 0.2.1 范围 |
 | --- | --- |
 | 二进制文件 | Intel/IEEE、DEC/VAX、SGI/MIPS 三种编码，512 字节块，int16 或 float32 点存储 |
 | 标记点 | XYZ、残差、7 位相机掩码、缺失点；支持 LABELS/LABELS2/LABELS3 等连续分段 |
@@ -37,13 +37,29 @@ moon test
 moon run examples/memory
 ```
 
-发布后，依赖本库的项目执行 `moon add TAIminif/TAlminif`，并在 `moon.pkg` 中配置：
+本项目通过 GitHub 源码交付。跨项目使用时，将本仓库与应用模块加入同一 `moon.work`，在应用的 `moon.mod` 中声明依赖：
+
+```text
+import {
+  "TAIminif/TAlminif@0.2.1",
+}
+```
+
+工作区的 `moon.work`（路径相对于该文件）：
+
+```text
+members = ["TAlminif", "my-app"]
+```
+
+在应用的 `moon.pkg` 中配置库包：
 
 ```text
 import {
   "TAIminif/TAlminif/lib" @c3d,
 }
 ```
+
+然后从应用模块目录运行构建或测试。工作区依赖使用本地源码，配置说明见[官方模块依赖文档](https://docs.moonbitlang.com/zh-cn/latest/toolchain/moon/module.html)。
 
 ## 三个可复现使用流程
 
@@ -120,10 +136,10 @@ moon test --target wasm
 moon test --target js
 python -m pip install -r requirements-test.txt
 python scripts/interop.py
-python scripts/compatibility_cases.py
+python scripts/compatibility_cases.py --download-official
 python scripts/count_code.py
 ```
 
-独立脚本用 `py-c3d 0.6.0` 生成整数和浮点试验，双向比较点数据、残差、相机掩码、通道校准、元数据、裁剪/选择/转换结果，检查统计值、CSV 时间及错误退出。跨编码脚本另下载并校验官方 Sample01、Sample02 的 SHA-256，逐帧对照12个原始文件及各目标编码写出结果；合成511点/511模拟通道案例独立核对文件字节、校准值和跨分段编辑。报告与合成数据留在被 Git 忽略的 `artifacts/`，官方数据留在 `.tools/compatibility/`，不随 MIT 源码重新分发。Python 只用于验证。
+独立脚本用 `py-c3d 0.6.0` 生成整数和浮点试验，双向比较点数据、残差、相机掩码、通道校准、元数据、裁剪/选择/转换结果，检查统计值、CSV 时间及错误退出。跨编码脚本另下载并校验官方 Sample01、Sample02 的 SHA-256，逐帧对照10个未经修改的有效原件、2个明确修正的副本及各目标编码输出；两个畸形原件的报错与前后哈希另行保留。合成511点/511模拟通道案例独立核对文件字节、校准值和跨分段编辑。报告与合成数据留在被 Git 忽略的 `artifacts/`，官方数据留在 `.tools/compatibility/`，不随 MIT 源码重新分发。Python 只用于验证。
 
 实现依据 [C3D 官方指南](https://www.c3d.org/docs/C3D_User_Guide.pdf)，独立编写 MoonBit 实现；[py-c3d](https://github.com/EmbodiedCognition/py-c3d) 仅为外部对照工具，未复制其源码。来源许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，生态查重范围见 [UNIQUENESS.md](docs/UNIQUENESS.md)。
