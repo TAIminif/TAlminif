@@ -20,6 +20,7 @@ test "parameters preserve arbitrary payloads and locked state" {
     groups: [{ id: 7, name: "CUSTOM", description: b"group", locked: true, }],
     values: [
       {
+        processor: @lib.Intel,
         group_id: 7,
         name: "DATA",
         data_type: 1,
@@ -45,6 +46,7 @@ test "parameter structural validation rejects dangling duplicate and malformed v
     locked: false,
   }
   let value : @lib.Parameter = {
+    processor: @lib.Intel,
     group_id: 1,
     name: "USED",
     data_type: 2,

@@ -1,0 +1,308 @@
+{
+  "date": "2026-10-16",
+  "version": "0.2.0",
+  "toolchain": {
+    "moon": "0.1.20261012",
+    "moonc": "v0.10.15+943464bfa"
+  },
+  "local_backends": [
+    "wasm-gc",
+    "wasm",
+    "js"
+  ],
+  "tests_per_local_backend": 67,
+  "source_count": {
+    "method": "nonblank noncomment physical .mbt lines; generated interfaces excluded",
+    "totals": {
+      "production": 4890,
+      "tests": 1628,
+      "examples": 14
+    }
+  },
+  "compatibility": {
+    "result": "passed",
+    "passed_cases": 21,
+    "generated_511_channel_cases": 9,
+    "unaltered_official_cases": 10,
+    "explicitly_repaired_official_cases": 2,
+    "independently_decoded_transcode_outputs": 54,
+    "sources": {
+      "Sample01": {
+        "url": "https://www.c3d.org/data/Sample01.zip",
+        "sha256": "15f7277768d52a0a834c7fb96e07bdc916bfc076b6faf76e8b2654a04893308d"
+      },
+      "Sample02": {
+        "url": "https://www.c3d.org/data/Sample02.zip",
+        "sha256": "bf83f6197745ea1ced2a55cae9115b08816055d63c6d4463b53085a636f42a9b"
+      }
+    },
+    "notes": [
+      "Sample02 SGI integer and real originals contain a malformed final next-record offset. They must be rejected; only explicitly repaired local copies undergo numeric tests.",
+      "Sample02 DEC integer contains 8 header events, while its other five variants contain 9; each file is compared with its own independent oracle."
+    ],
+    "cases": [
+      {
+        "name": "synthetic-intel-integer",
+        "processor": "intel",
+        "storage": "int16",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "synthetic-intel-float",
+        "processor": "intel",
+        "storage": "float32",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "synthetic-intel-integer-unsigned",
+        "processor": "intel",
+        "storage": "int16",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "synthetic-dec-integer",
+        "processor": "dec",
+        "storage": "int16",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "synthetic-dec-float",
+        "processor": "dec",
+        "storage": "float32",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "synthetic-dec-integer-unsigned",
+        "processor": "dec",
+        "storage": "int16",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "synthetic-mips-integer",
+        "processor": "mips",
+        "storage": "int16",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "synthetic-mips-float",
+        "processor": "mips",
+        "storage": "float32",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "synthetic-mips-integer-unsigned",
+        "processor": "mips",
+        "storage": "int16",
+        "points": 511,
+        "analog_channels": 511,
+        "frames": 3,
+        "result": "passed"
+      },
+      {
+        "name": "Sample01-Eb015pi",
+        "processor": "intel",
+        "storage": "int16",
+        "points": 26,
+        "analog_channels": 16,
+        "frames": 450,
+        "sha256": "f785cd5ef172aec238327291dc0389ab1ab28e4bf79c69be6edbde188f8b19e6",
+        "tested_sha256": "f785cd5ef172aec238327291dc0389ab1ab28e4bf79c69be6edbde188f8b19e6",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample01-Eb015pr",
+        "processor": "intel",
+        "storage": "float32",
+        "points": 26,
+        "analog_channels": 16,
+        "frames": 450,
+        "sha256": "a908447796851e662d931436f7f474e6d877586b6e9a8821014914af70b38241",
+        "tested_sha256": "a908447796851e662d931436f7f474e6d877586b6e9a8821014914af70b38241",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample01-Eb015si",
+        "processor": "mips",
+        "storage": "int16",
+        "points": 26,
+        "analog_channels": 16,
+        "frames": 450,
+        "sha256": "71f865213951e8b327f823bcfa08bc1cd18cfbadd64294a01994a68c5eaeb0ff",
+        "tested_sha256": "71f865213951e8b327f823bcfa08bc1cd18cfbadd64294a01994a68c5eaeb0ff",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample01-Eb015sr",
+        "processor": "mips",
+        "storage": "float32",
+        "points": 26,
+        "analog_channels": 16,
+        "frames": 450,
+        "sha256": "236aabb4aa8ef0bbee545840ed58ea9612e2b31877248b93412036b29ef5db1f",
+        "tested_sha256": "236aabb4aa8ef0bbee545840ed58ea9612e2b31877248b93412036b29ef5db1f",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample01-Eb015vi",
+        "processor": "dec",
+        "storage": "int16",
+        "points": 26,
+        "analog_channels": 16,
+        "frames": 450,
+        "sha256": "5dc3653627d71997250ad063b61d15ce9fba48a17c00145a5326cc971a49767b",
+        "tested_sha256": "5dc3653627d71997250ad063b61d15ce9fba48a17c00145a5326cc971a49767b",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample01-Eb015vr",
+        "processor": "dec",
+        "storage": "float32",
+        "points": 26,
+        "analog_channels": 16,
+        "frames": 450,
+        "sha256": "f7ac47eef808518b0624ff7b4148d4c50aa84e9d7062b7f41a67949fde179bad",
+        "tested_sha256": "f7ac47eef808518b0624ff7b4148d4c50aa84e9d7062b7f41a67949fde179bad",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample02-dec_int",
+        "processor": "dec",
+        "storage": "int16",
+        "points": 36,
+        "analog_channels": 16,
+        "frames": 89,
+        "sha256": "941056d01195c0dc246475422cb338cbea0b4a55f0b7243ae71d8c50c9f6f787",
+        "tested_sha256": "941056d01195c0dc246475422cb338cbea0b4a55f0b7243ae71d8c50c9f6f787",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample02-dec_real",
+        "processor": "dec",
+        "storage": "float32",
+        "points": 36,
+        "analog_channels": 16,
+        "frames": 89,
+        "sha256": "59260867d55ef22593aed0bcb9d8aea3ed42450de0d93ecd6e9cd3ad4e4e0e14",
+        "tested_sha256": "59260867d55ef22593aed0bcb9d8aea3ed42450de0d93ecd6e9cd3ad4e4e0e14",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample02-pc_int",
+        "processor": "intel",
+        "storage": "int16",
+        "points": 36,
+        "analog_channels": 16,
+        "frames": 89,
+        "sha256": "db612fb00d824fdd1eeb76ee0a9b6b71da6f2ef06d565d6e80fae940b657126c",
+        "tested_sha256": "db612fb00d824fdd1eeb76ee0a9b6b71da6f2ef06d565d6e80fae940b657126c",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample02-pc_real",
+        "processor": "intel",
+        "storage": "float32",
+        "points": 36,
+        "analog_channels": 16,
+        "frames": 89,
+        "sha256": "2d2adb0f7654a4552e4c7146ac9ee3f9214e1378825346738f7f8381e3948f31",
+        "tested_sha256": "2d2adb0f7654a4552e4c7146ac9ee3f9214e1378825346738f7f8381e3948f31",
+        "validation_status": "original",
+        "repair": null,
+        "result": "passed"
+      },
+      {
+        "name": "Sample02-sgi_int-repaired",
+        "processor": "mips",
+        "storage": "int16",
+        "points": 36,
+        "analog_channels": 16,
+        "frames": 89,
+        "sha256": "db916c9bd06505ddc49b87d42784c9f87c1ae4f8e371bed04d7cb35d46173b25",
+        "tested_sha256": "61a5b48e85d6e1a20a0e261a3a7eabf61c08b553d7d02f779e67cf436ae7a048",
+        "validation_status": "repaired copy; original intentionally rejected",
+        "repair": {
+          "reason": "final POINT:LABELS next-record offset stored in wrong byte order",
+          "byte_offset_zero_based": 5429,
+          "original_bytes_hex": "3f01",
+          "repaired_bytes_hex": "013f",
+          "numeric_jump": 319,
+          "original_sha256": "db916c9bd06505ddc49b87d42784c9f87c1ae4f8e371bed04d7cb35d46173b25",
+          "repaired_sha256": "61a5b48e85d6e1a20a0e261a3a7eabf61c08b553d7d02f779e67cf436ae7a048",
+          "original_validation": "expected structured invalid rejection"
+        },
+        "result": "passed"
+      },
+      {
+        "name": "Sample02-sgi_real-repaired",
+        "processor": "mips",
+        "storage": "float32",
+        "points": 36,
+        "analog_channels": 16,
+        "frames": 89,
+        "sha256": "4b38c31323d148b368f11c494b818ebe5ed815a12727bc551b900eb7142cb1cc",
+        "tested_sha256": "cde4d466783bed07386c4c15b0477db8689c22289a0e1ded3f7d6abacd632253",
+        "validation_status": "repaired copy; original intentionally rejected",
+        "repair": {
+          "reason": "final POINT:LABELS next-record offset stored in wrong byte order",
+          "byte_offset_zero_based": 5429,
+          "original_bytes_hex": "3f01",
+          "repaired_bytes_hex": "013f",
+          "numeric_jump": 319,
+          "original_sha256": "4b38c31323d148b368f11c494b818ebe5ed815a12727bc551b900eb7142cb1cc",
+          "repaired_sha256": "cde4d466783bed07386c4c15b0477db8689c22289a0e1ded3f7d6abacd632253",
+          "original_validation": "expected structured invalid rejection"
+        },
+        "result": "passed"
+      }
+    ]
+  },
+  "independent_interop": "py-c3d 0.6.0: passed",
+  "test_dependencies": {
+    "python": "3.11.9",
+    "c3d": "0.6.0",
+    "numpy": "2.2.6"
+  },
+  "reproduce": "pwsh -File scripts/verify.ps1 -Python <Python3.11 executable>"
+}

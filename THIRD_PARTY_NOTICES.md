@@ -7,4 +7,4 @@ MoonC3D implementation is MIT licensed; see LICENSE.
 - [py-c3d 0.6.0](https://github.com/EmbodiedCognition/py-c3d): MIT, independently installed test encoder/decoder. No upstream implementation source copied into MoonC3D.
 - [NumPy 2.2.6](https://github.com/numpy/numpy): BSD-3-Clause and bundled third-party notices; numerical test dependency, not vendored.
 
-Test fixtures contain synthetic samples created for this project. Identity records, credentials, proprietary trials and third-party motion datasets are not included.
+Synthetic fixtures are generated for this project. The compatibility harness downloads official C3D.org Sample01 and Sample02 archives into ignored .tools/compatibility, verifies pinned SHA-256 hashes, and retains supplied readme files locally for provenance. Third-party trial files are not committed, bundled, or relicensed under MIT. Source: https://www.c3d.org/sampledata.html . Identity records, credentials and proprietary trials are not included.

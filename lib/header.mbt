@@ -21,20 +21,19 @@ pub fn read_header(
     "parameter offset",
   )
   check_range(data, parameter_offset, 4)
-  if u8(data, parameter_offset + 3) != 84 {
-    raise C3dError::Unsupported("only Intel IEEE C3D is supported")
-  }
+  let processor = read_processor(data, parameter_block)
   let header : Header = {
+    processor,
     parameter_block,
-    point_count: u16(data, 2),
-    analog_values_per_frame: u16(data, 4),
-    first_frame: u16(data, 6),
-    last_frame: u16(data, 8),
-    max_gap: u16(data, 10),
-    scale: f32(data, 12),
-    data_block: u16(data, 16),
-    analog_subsamples: u16(data, 18),
-    point_rate: f32(data, 20),
+    point_count: encoded_u16(data, 2, processor),
+    analog_values_per_frame: encoded_u16(data, 4, processor),
+    first_frame: encoded_u16(data, 6, processor),
+    last_frame: encoded_u16(data, 8, processor),
+    max_gap: encoded_u16(data, 10, processor),
+    scale: encoded_f32(data, 12, processor),
+    data_block: encoded_u16(data, 16, processor),
+    analog_subsamples: encoded_u16(data, 18, processor),
+    point_rate: encoded_f32(data, 20, processor),
     reserved: data[24:512].to_owned(),
   }
   validate_header(header, limits~)
@@ -114,12 +113,12 @@ pub fn write_header(
       header.last_frame,
       header.max_gap,
     ] {
-    put_u16(out, value)
+    put_encoded_u16(out, value, header.processor)
   }
-  put_f32(out, header.scale)
-  put_u16(out, header.data_block)
-  put_u16(out, header.analog_subsamples)
-  put_f32(out, header.point_rate)
+  put_encoded_f32(out, header.scale, header.processor)
+  put_encoded_u16(out, header.data_block, header.processor)
+  put_encoded_u16(out, header.analog_subsamples, header.processor)
+  put_encoded_f32(out, header.point_rate, header.processor)
   out.write_bytes(header.reserved[:])
   out.to_bytes()
 }
@@ -129,18 +128,20 @@ pub fn Header::new(
   point_count : Int32,
   point_rate : Double,
   scale~ : Double = -0.01,
-) -> Header {
+  processor~ : Processor = Intel,
+) -> Header raise C3dError {
   {
+    processor,
     parameter_block: 2,
     point_count,
     analog_values_per_frame: 0,
     first_frame: 1,
     last_frame: 1,
     max_gap: 0,
-    scale: Float::from_double(scale).to_double(),
+    scale: quantize_f32(scale, processor),
     data_block: 3,
     analog_subsamples: 0,
-    point_rate: Float::from_double(point_rate).to_double(),
+    point_rate: quantize_f32(point_rate, processor),
     reserved: Bytes::make(488, 0),
   }
 }
@@ -156,8 +157,11 @@ pub fn trial_frame(
       if value.data_type != 2 || value.data.length() != 4 {
         raise C3dError::Invalid("TRIAL frame field must contain two words")
       }
-      let combined = u16(value.data, 0).reinterpret_as_uint() |
-        (u16(value.data, 2).reinterpret_as_uint() << 16)
+      let combined = encoded_u16(value.data, 0, value.processor).reinterpret_as_uint() |
+        (
+          encoded_u16(value.data, 2, value.processor).reinterpret_as_uint() <<
+          16
+        )
       if combined > 2147483647U {
         raise C3dError::ResourceLimit("TRIAL frame number")
       }
@@ -261,23 +265,7 @@ fn labels_or_default(
   count : Int32,
   prefix : String,
 ) -> Array[String] raise C3dError {
-  match parameters.get(group, name) {
-    None =>
-      if prefix == "" {
-        Array::make(count, "")
-      } else {
-        Array::makei(count, i => "\{prefix}\{i + 1}")
-      }
-    Some(value) => {
-      let labels = value.text_values()
-      if labels.length() < count {
-        raise C3dError::Invalid(
-          "insufficient " + group + ":" + name + " values",
-        )
-      }
-      labels[0:count].to_owned()
-    }
-  }
+  parameters.read_text_series(group, name, count, prefix~)
 }
 
 ///|
@@ -289,21 +277,12 @@ fn numeric_vector(
   fallback : Double,
   unsigned~ : Bool = false,
 ) -> Array[Double] raise C3dError {
-  match parameters.get(group, name) {
-    None => Array::make(count, fallback)
-    Some(value) => {
-      let numbers = if value.data_type == 4 {
-        value.real_values()
-      } else {
-        value.int_values(unsigned~).map(x => x.to_double())
-      }
-      if numbers.length() < count {
-        raise C3dError::Invalid(
-          "insufficient " + group + ":" + name + " values",
-        )
-      }
-      numbers[0:count].to_owned()
-    }
+  if unsigned {
+    parameters
+    .read_int_series(group, name, count, unsigned~, fallback=0)
+    .map(x => x.to_double())
+  } else {
+    parameters.read_real_series(group, name, count, fallback~)
   }
 }
 
@@ -364,12 +343,16 @@ pub fn resolve_layout(
   if data_block != header.data_block {
     raise C3dError::Invalid("POINT:DATA_START differs from header")
   }
-  let point_labels = labels_or_default(
-    parameters, "POINT", "LABELS", point_count, "P",
-  )
-  let point_descriptions = labels_or_default(
-    parameters, "POINT", "DESCRIPTIONS", point_count, "",
-  )
+  let point_labels = if point_count == 0 {
+    []
+  } else {
+    labels_or_default(parameters, "POINT", "LABELS", point_count, "P")
+  }
+  let point_descriptions = if point_count == 0 {
+    []
+  } else {
+    labels_or_default(parameters, "POINT", "DESCRIPTIONS", point_count, "")
+  }
   let point_unit = optional_text(parameters, "POINT", "UNITS", "mm")
   let header_channels = if header.analog_subsamples == 0 {
     0
@@ -391,67 +374,74 @@ pub fn resolve_layout(
   if analog_count != header_channels {
     raise C3dError::Invalid("ANALOG:USED differs from header sample layout")
   }
-  let analog_rate = optional_number(
-    parameters,
-    "ANALOG",
-    "RATE",
-    point_rate * header.analog_subsamples.to_double(),
-  )
-  let subsamples = if analog_count == 0 {
-    0
+  let (subsamples, analog_rate, analog_unsigned, global_scale, analog_channels) = if analog_count ==
+    0 {
+    // The standard makes all remaining ANALOG parameters inactive at USED=0.
+    (0, 0.0, false, 1.0, [])
   } else {
-    exact_int(
+    let analog_rate = optional_number(
+      parameters,
+      "ANALOG",
+      "RATE",
+      point_rate * header.analog_subsamples.to_double(),
+    )
+    let subsamples = exact_int(
       analog_rate / point_rate,
       1,
       limits.max_subsamples,
       "analog/point rate ratio",
     )
-  }
-  if !finite(analog_rate) ||
-    analog_rate < 0.0 ||
-    subsamples != header.analog_subsamples {
-    raise C3dError::Invalid("analog rate and header subsamples disagree")
-  }
-  let analog_format = optional_text(parameters, "ANALOG", "FORMAT", "SIGNED")
-  if analog_format != "SIGNED" && analog_format != "UNSIGNED" {
-    raise C3dError::Unsupported("unsupported analog format")
-  }
-  let analog_unsigned = analog_format == "UNSIGNED"
-  let global_scale = optional_number(parameters, "ANALOG", "GEN_SCALE", 1.0)
-  if !finite(global_scale) || global_scale == 0.0 {
-    raise C3dError::Invalid("invalid analog global scale")
-  }
-  let labels = labels_or_default(
-    parameters, "ANALOG", "LABELS", analog_count, "A",
-  )
-  let descriptions = labels_or_default(
-    parameters, "ANALOG", "DESCRIPTIONS", analog_count, "",
-  )
-  let units = labels_or_default(parameters, "ANALOG", "UNITS", analog_count, "")
-  let scales = numeric_vector(parameters, "ANALOG", "SCALE", analog_count, 1.0)
-  let offsets = numeric_vector(
-    parameters,
-    "ANALOG",
-    "OFFSET",
-    analog_count,
-    0.0,
-    unsigned=analog_unsigned,
-  )
-  let analog_channels : Array[Channel] = []
-  for i in 0..<analog_count {
-    if !finite(scales[i]) ||
-      scales[i] == 0.0 ||
-      !finite(scales[i] * global_scale) ||
-      scales[i] * global_scale == 0.0 {
-      raise C3dError::Invalid("invalid analog channel scale")
+    if !finite(analog_rate) ||
+      analog_rate < 0.0 ||
+      subsamples != header.analog_subsamples {
+      raise C3dError::Invalid("analog rate and header subsamples disagree")
     }
-    analog_channels.push({
-      label: labels[i],
-      description: descriptions[i],
-      unit: units[i],
-      scale: scales[i],
-      offset: offsets[i],
-    })
+    let analog_format = optional_text(parameters, "ANALOG", "FORMAT", "SIGNED")
+    if analog_format != "SIGNED" && analog_format != "UNSIGNED" {
+      raise C3dError::Unsupported("unsupported analog format")
+    }
+    let analog_unsigned = analog_format == "UNSIGNED"
+    let global_scale = optional_number(parameters, "ANALOG", "GEN_SCALE", 1.0)
+    if !finite(global_scale) || global_scale == 0.0 {
+      raise C3dError::Invalid("invalid analog global scale")
+    }
+    let labels = labels_or_default(
+      parameters, "ANALOG", "LABELS", analog_count, "A",
+    )
+    let descriptions = labels_or_default(
+      parameters, "ANALOG", "DESCRIPTIONS", analog_count, "",
+    )
+    let units = labels_or_default(
+      parameters, "ANALOG", "UNITS", analog_count, "",
+    )
+    let scales = numeric_vector(
+      parameters, "ANALOG", "SCALE", analog_count, 1.0,
+    )
+    let offsets = numeric_vector(
+      parameters,
+      "ANALOG",
+      "OFFSET",
+      analog_count,
+      0.0,
+      unsigned=analog_unsigned,
+    )
+    let analog_channels : Array[Channel] = []
+    for i in 0..<analog_count {
+      if !finite(scales[i]) ||
+        scales[i] == 0.0 ||
+        !finite(scales[i] * global_scale) ||
+        scales[i] * global_scale == 0.0 {
+        raise C3dError::Invalid("invalid analog channel scale")
+      }
+      analog_channels.push({
+        label: labels[i],
+        description: descriptions[i],
+        unit: units[i],
+        scale: scales[i],
+        offset: offsets[i],
+      })
+    }
+    (subsamples, analog_rate, analog_unsigned, global_scale, analog_channels)
   }
   let sample_values = checked_add(
     checked_mul(point_count, 4, "point values"),
@@ -475,6 +465,7 @@ pub fn resolve_layout(
     "frame byte size",
   )
   {
+    processor: header.processor,
     frame_count,
     first_frame,
     point_count,

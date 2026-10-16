@@ -48,7 +48,11 @@ pub fn rebuild(
     frames.length(),
     first_frame,
   )
-  let parameters = write_event_parameters(parameters, events)
+  let parameters = write_event_parameters(
+    parameters,
+    events,
+    processor=header.processor,
+  )
   let layout = resolve_layout(header, parameters)
   let result = { header, parameters, layout, frames, events, }
   validate_document(result)
@@ -217,27 +221,62 @@ fn select_analog_auxiliary(
   indices : Array[Int32],
 ) -> Parameters raise C3dError {
   let mut result = target
+  let source_count = exact_int(
+    optional_number(source, "ANALOG", "USED", 0.0, unsigned=true),
+    0,
+    65535,
+    "ANALOG:USED",
+  )
+  if source_count == 0 {
+    return target
+  }
   for name in ["GAIN", "RANGE"] {
-    match source.get("ANALOG", name) {
-      None => ()
-      Some(value) => {
-        if value.dimensions.length() != 1 {
-          raise C3dError::Unsupported("non-vector ANALOG auxiliary metadata")
-        }
-        let size = element_size(value.data_type)
-        let payload = @buffer.Buffer::Buffer()
-        for index in indices {
-          if index >= value.dimensions[0] {
-            raise C3dError::Invalid("ANALOG auxiliary metadata too short")
-          }
-          payload.write_bytes(value.data[index * size:(index + 1) * size])
-        }
-        result = result.set(
-          "ANALOG",
-          { ..value, dimensions: [indices.length()], data: payload.to_bytes(), },
-          override_locked=true,
-        )
+    let parts = series_parameters(source, "ANALOG", name, source_count)
+    if parts.is_empty() {
+      continue
+    }
+    let template = parts[0]
+    if template.data_type != 1 &&
+      template.data_type != 2 &&
+      template.data_type != 4 {
+      raise C3dError::Unsupported("non-numeric ANALOG auxiliary metadata")
+    }
+    let size = element_size(template.data_type)
+    let flattened = @buffer.Buffer::Buffer()
+    for part_index in 0..<parts.length() {
+      let part = parts[part_index]
+      let count = series_segment_length(source_count, part_index)
+      validate_series_vector(part, count)
+      validate_parameter(part)
+      if part.data_type != template.data_type {
+        raise C3dError::Invalid("ANALOG auxiliary series data types differ")
       }
+      let data = transcode_parameter_data(
+        part.data_type,
+        part.data,
+        part.processor,
+        template.processor,
+      )
+      flattened.write_bytes(data[0:count * size])
+    }
+    let source_data = flattened.to_bytes()
+    let selected = @buffer.Buffer::Buffer()
+    for index in indices {
+      selected.write_bytes(source_data[index * size:(index + 1) * size])
+    }
+    let selected_data = selected.to_bytes()
+    result = result.remove_series("ANALOG", name, override_locked=true)
+    let segments = ((indices.length() + 254) / 255).max(1)
+    for part_index in 0..<segments {
+      let start = part_index * 255
+      let end = (start + 255).min(indices.length())
+      result = result.set("ANALOG", {
+        ..template,
+        processor: template.processor,
+        name: series_name(name, part_index + 1),
+        dimensions: [end - start],
+        data: selected_data[start * size:end * size].to_owned(),
+      })
     }
   }
   result
@@ -312,7 +351,10 @@ pub fn Document::convert_storage(
   if !finite(scale) || scale == 0.0 {
     raise C3dError::Invalid("invalid target point scale")
   }
-  let header = { ..self.header, scale: Float::from_double(scale).to_double(), }
+  let header = {
+    ..self.header,
+    scale: quantize_f32(scale, self.header.processor),
+  }
   let params = core_parameters(
     self.parameters,
     header,

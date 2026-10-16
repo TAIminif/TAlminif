@@ -11,7 +11,7 @@ test "C3D header exact offsets and IEEE processor check" {
   assert_eq(decoded.point_count, 2)
   assert_eq(decoded.scale, Float::from_double(header.scale).to_double())
   let other = data.to_array()
-  other[515] = 85
+  other[515] = 87
   expect_error(() => @lib.read_header(Bytes::from_array(other)))
 }
 

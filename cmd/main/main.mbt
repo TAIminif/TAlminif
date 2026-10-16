@@ -22,7 +22,7 @@ extern "js" fn fail(text : String, code : Int32) -> Unit = "(text, code) => glob
 
 ///|
 let help : String =
-  #|MoonC3D 0.1.0 — C3D motion-capture tools
+  #|MoonC3D 0.2.0 — C3D motion-capture tools
   #|Usage: node bin/moonc3d.mjs COMMAND ...
   #|  inspect INPUT                     metadata as JSON
   #|  check INPUT                       validate metadata and every frame
@@ -34,6 +34,7 @@ let help : String =
   #|  select-points INPUT OUTPUT I,...  zero-based ordered point indices
   #|  select-analog INPUT OUTPUT I,...  zero-based ordered analog indices
   #|  convert INPUT OUTPUT SCALE        negative=float32; positive=int16
+  #|  convert-encoding INPUT OUTPUT intel|dec|mips
   #|  csv INPUT OUTPUT points|analog|events
   #|  demo OUTPUT.c3d                   create a reproducible example trial
   #|All output paths must be new. Crops rebase frame numbers and event times.
@@ -204,6 +205,18 @@ fn run(args : Array[String]) -> Unit raise @c3d.C3dError {
       arity(args, 4)
       let selection = indices(args[3])
       saved(args[2], @c3d.read(read_bytes(args[1])).select_analog(selection))
+    }
+    "convert-encoding" => {
+      arity(args, 4)
+      let document = @c3d.read(read_bytes(args[1]))
+      let processor = @c3d.processor_from_name(args[3])
+      let data = @c3d.write(document, processor~)
+      write_bytes(args[2], data)
+      output_json({
+        "output": args[2],
+        "processor": processor.name(),
+        "bytes": data.length(),
+      })
     }
     "convert" => {
       arity(args, 4)

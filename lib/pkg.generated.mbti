@@ -43,6 +43,14 @@ pub fn element_size(Int) -> Int raise C3dError
 
 pub fn encode_frame(Frame, Layout) -> Bytes raise C3dError
 
+pub fn encoded_f32(Bytes, Int, Processor) -> Double raise C3dError
+
+pub fn encoded_i16(Bytes, Int, Processor) -> Int raise C3dError
+
+pub fn encoded_u16(Bytes, Int, Processor) -> Int raise C3dError
+
+pub fn encoded_u32(Bytes, Int, Processor) -> UInt raise C3dError
+
 pub fn event_json(Event) -> Json
 
 pub fn events_csv(Reader, maximum_bytes? : Int) -> String raise C3dError
@@ -105,11 +113,23 @@ pub fn parse_parameters_json(Json, limits? : Limits) -> Parameters raise C3dErro
 
 pub fn points_csv(Reader, maximum_bytes? : Int) -> String raise C3dError
 
+pub fn processor_from_id(Int) -> Processor raise C3dError
+
+pub fn processor_from_name(String) -> Processor raise C3dError
+
+pub fn put_encoded_f32(@buffer.Buffer, Double, Processor) -> Unit raise C3dError
+
+pub fn put_encoded_i16(@buffer.Buffer, Int, Processor) -> Unit raise C3dError
+
+pub fn put_encoded_u16(@buffer.Buffer, Int, Processor) -> Unit raise C3dError
+
 pub fn put_f32(@buffer.Buffer, Double) -> Unit raise C3dError
 
 pub fn put_i16(@buffer.Buffer, Int) -> Unit raise C3dError
 
 pub fn put_u16(@buffer.Buffer, Int) -> Unit raise C3dError
+
+pub fn quantize_f32(Double, Processor) -> Double raise C3dError
 
 pub fn read(Bytes, limits? : Limits) -> Document raise C3dError
 
@@ -119,7 +139,11 @@ pub fn read_header(Bytes, limits? : Limits) -> Header raise C3dError
 
 pub fn read_header_events(Header) -> Array[Event] raise C3dError
 
+pub fn read_parameter_file(Bytes, limits? : Limits) -> Parameters raise C3dError
+
 pub fn read_parameters(Bytes, Int, limits? : Limits) -> Parameters raise C3dError
+
+pub fn read_processor(Bytes, Int) -> Processor raise C3dError
 
 pub fn rebuild(Document, Array[Frame], Array[String], Array[String], Array[Channel], Int, Array[Event]) -> Document raise C3dError
 
@@ -132,6 +156,8 @@ pub fn resolve_layout(Header, Parameters, limits? : Limits) -> Layout raise C3dE
 pub fn round_int(Double, Int, Int, String) -> Int raise C3dError
 
 pub fn summary_json(TrialSummary) -> Json
+
+pub fn transcode_parameter_data(Int, Bytes, Processor, Processor) -> Bytes raise C3dError
 
 pub fn trial_frame(Parameters, String) -> Int? raise C3dError
 
@@ -157,13 +183,15 @@ pub fn validate_parameter(Parameter, limits? : Limits) -> Unit raise C3dError
 
 pub fn validate_parameters(Parameters, limits? : Limits) -> Unit raise C3dError
 
-pub fn write(Document, limits? : Limits) -> Bytes raise C3dError
+pub fn write(Document, limits? : Limits, processor? : Processor) -> Bytes raise C3dError
 
-pub fn write_event_parameters(Parameters, Array[Event]) -> Parameters raise C3dError
+pub fn write_event_parameters(Parameters, Array[Event], processor? : Processor) -> Parameters raise C3dError
 
 pub fn write_header(Header, limits? : Limits) -> Bytes raise C3dError
 
-pub fn write_parameters(Parameters, limits? : Limits) -> Bytes raise C3dError
+pub fn write_parameter_file(Parameters, processor? : Processor, limits? : Limits) -> Bytes raise C3dError
+
+pub fn write_parameters(Parameters, limits? : Limits, processor? : Processor) -> Bytes raise C3dError
 
 // Errors
 pub suberror C3dError {
@@ -240,7 +268,7 @@ pub fn Document::convert_storage(Self, Double, unsigned? : Bool) -> Self raise C
 pub fn Document::crop(Self, Int, Int, rebase? : Bool) -> Self raise C3dError
 pub fn Document::crop_time(Self, Double, Double, rebase? : Bool) -> Self raise C3dError
 pub fn Document::equal(Self, Self) -> Bool
-pub fn Document::new(Array[String], Array[Channel], Array[Frame], point_rate? : Double, scale? : Double, analog_subsamples? : Int, analog_global_scale? : Double, analog_unsigned? : Bool, point_unit? : String) -> Self raise C3dError
+pub fn Document::new(Array[String], Array[Channel], Array[Frame], point_rate? : Double, scale? : Double, analog_subsamples? : Int, analog_global_scale? : Double, analog_unsigned? : Bool, point_unit? : String, processor? : Processor) -> Self raise C3dError
 pub fn Document::not_equal(Self, Self) -> Bool
 pub fn Document::rename_analog(Self, Int, String) -> Self raise C3dError
 pub fn Document::rename_point(Self, Int, String) -> Self raise C3dError
@@ -287,6 +315,7 @@ pub fn Group::not_equal(Self, Self) -> Bool
 pub fn Group::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Header {
+  processor : Processor
   parameter_block : Int
   point_count : Int
   analog_values_per_frame : Int
@@ -300,11 +329,12 @@ pub(all) struct Header {
   reserved : Bytes
 } derive(Eq, @debug.Debug)
 pub fn Header::equal(Self, Self) -> Bool
-pub fn Header::new(Int, Double, scale? : Double) -> Self
+pub fn Header::new(Int, Double, scale? : Double, processor? : Processor) -> Self raise C3dError
 pub fn Header::not_equal(Self, Self) -> Bool
 pub fn Header::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Layout {
+  processor : Processor
   frame_count : Int
   first_frame : Int
   point_count : Int
@@ -387,6 +417,7 @@ pub fn Moments::finish(Self) -> Distribution
 pub fn Moments::new() -> Self
 
 pub(all) struct Parameter {
+  processor : Processor
   group_id : Int
   name : String
   data_type : Int
@@ -403,9 +434,9 @@ pub fn Parameter::integers(String, Array[Int], dimensions? : Array[Int]) -> Self
 pub fn Parameter::linear_index(Self, Array[Int]) -> Int raise C3dError
 pub fn Parameter::not_equal(Self, Self) -> Bool
 pub fn Parameter::number(Self, unsigned? : Bool) -> Double raise C3dError
-pub fn Parameter::real(String, Double) -> Self raise C3dError
+pub fn Parameter::real(String, Double, processor? : Processor) -> Self raise C3dError
 pub fn Parameter::real_values(Self) -> Array[Double] raise C3dError
-pub fn Parameter::reals(String, Array[Double], dimensions? : Array[Int]) -> Self raise C3dError
+pub fn Parameter::reals(String, Array[Double], dimensions? : Array[Int], processor? : Processor) -> Self raise C3dError
 pub fn Parameter::text(String, String) -> Self raise C3dError
 pub fn Parameter::text_values(Self) -> Array[String] raise C3dError
 pub fn Parameter::texts(String, Array[String]) -> Self raise C3dError
@@ -424,15 +455,34 @@ pub fn Parameters::get(Self, String, String) -> Parameter? raise C3dError
 pub fn Parameters::group(Self, String) -> Group? raise C3dError
 pub fn Parameters::not_equal(Self, Self) -> Bool
 pub fn Parameters::put_int(Self, String, String, Int, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_int_series(Self, String, String, Array[Int], unsigned? : Bool, override_locked? : Bool) -> Self raise C3dError
 pub fn Parameters::put_ints(Self, String, String, Array[Int], override_locked? : Bool) -> Self raise C3dError
-pub fn Parameters::put_real(Self, String, String, Double, override_locked? : Bool) -> Self raise C3dError
-pub fn Parameters::put_reals(Self, String, String, Array[Double], override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_real(Self, String, String, Double, override_locked? : Bool, processor? : Processor) -> Self raise C3dError
+pub fn Parameters::put_real_series(Self, String, String, Array[Double], processor? : Processor, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_reals(Self, String, String, Array[Double], override_locked? : Bool, processor? : Processor) -> Self raise C3dError
 pub fn Parameters::put_text(Self, String, String, String, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::put_text_series(Self, String, String, Array[String], override_locked? : Bool) -> Self raise C3dError
 pub fn Parameters::put_texts(Self, String, String, Array[String], override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::read_int_series(Self, String, String, Int, unsigned? : Bool, fallback? : Int) -> Array[Int] raise C3dError
+pub fn Parameters::read_real_series(Self, String, String, Int, fallback? : Double) -> Array[Double] raise C3dError
+pub fn Parameters::read_text_series(Self, String, String, Int, prefix? : String) -> Array[String] raise C3dError
 pub fn Parameters::remove(Self, String, String, override_locked? : Bool) -> Self raise C3dError
+pub fn Parameters::remove_series(Self, String, String, override_locked? : Bool) -> Self raise C3dError
 pub fn Parameters::require(Self, String, String) -> Parameter raise C3dError
 pub fn Parameters::set(Self, String, Parameter, override_locked? : Bool) -> Self raise C3dError
 pub fn Parameters::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Processor {
+  Intel
+  Dec
+  Mips
+} derive(Eq, @debug.Debug)
+pub fn Processor::description(Self) -> String
+pub fn Processor::equal(Self, Self) -> Bool
+pub fn Processor::name(Self) -> String
+pub fn Processor::not_equal(Self, Self) -> Bool
+pub fn Processor::processor_id(Self) -> Int
+pub fn Processor::to_repr(Self) -> @debug.Repr
 
 pub struct Reader {
   data : Bytes

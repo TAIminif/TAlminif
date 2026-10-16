@@ -1,4 +1,4 @@
-param([switch]$Native)
+param([switch]$Native, [string]$Python = 'python')
 $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $isolatedRoot = Join-Path $projectRoot '.tools\moon-20261012'
@@ -29,9 +29,11 @@ try {
     }
     moon run examples/memory
     if ($LASTEXITCODE -ne 0) { throw 'Example failed' }
-    python -X utf8 scripts/interop.py
+    & $Python -X utf8 scripts/interop.py
     if ($LASTEXITCODE -ne 0) { throw 'Interoperability failed' }
-    $codeMetrics = python -X utf8 scripts/count_code.py
+    & $Python -X utf8 scripts/compatibility_cases.py --download-official
+    if ($LASTEXITCODE -ne 0) { throw 'Cross-encoding compatibility failed' }
+    $codeMetrics = & $Python -X utf8 scripts/count_code.py
     if ($LASTEXITCODE -ne 0) { throw 'Code count failed' }
     $codeMetrics | Set-Content -LiteralPath 'artifacts\code-count.json' -Encoding utf8
     ($codeMetrics -join "`n" | ConvertFrom-Json).totals | Format-Table

@@ -1,6 +1,7 @@
 ///|
 fn frame_test_layout(float_storage : Bool) -> @lib.Layout {
   {
+    processor: @lib.Intel,
     frame_count: 2,
     first_frame: 1,
     point_count: 1,

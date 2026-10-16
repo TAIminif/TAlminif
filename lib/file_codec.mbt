@@ -137,8 +137,14 @@ pub fn Document::new(
   analog_global_scale~ : Double = 1.0,
   analog_unsigned~ : Bool = false,
   point_unit~ : String = "mm",
+  processor~ : Processor = Intel,
 ) -> Document raise C3dError {
-  let header = Header::new(point_labels.length(), point_rate, scale~)
+  let header = Header::new(
+    point_labels.length(),
+    point_rate,
+    scale~,
+    processor~,
+  )
   let header = {
     ..header,
     analog_subsamples,
@@ -185,7 +191,11 @@ pub fn validate_document(
     }
     validate_frame(document.frames[i], resolved)
   }
-  let _ = write_event_parameters(document.parameters, document.events)
+  let _ = write_event_parameters(
+    document.parameters,
+    document.events,
+    processor=document.header.processor,
+  )
 }
 
 ///|
@@ -201,8 +211,8 @@ pub fn core_parameters(
   frame_count : Int32,
   first_frame : Int32,
 ) -> Parameters raise C3dError {
-  if labels.length() > 255 || channels.length() > 255 {
-    raise C3dError::Unsupported("split LABELS2 arrays are unsupported")
+  if labels.length() > 65535 || channels.length() > 65535 {
+    raise C3dError::ResourceLimit("C3D USED uint16 count")
   }
   if labels.length() != descriptions.length() {
     raise C3dError::Invalid("point description count")
@@ -216,12 +226,19 @@ pub fn core_parameters(
     Parameter::unsigned("USED", labels.length()),
     override_locked=true,
   )
-  result = result.put_real("POINT", "SCALE", header.scale, override_locked=true)
+  result = result.put_real(
+    "POINT",
+    "SCALE",
+    header.scale,
+    override_locked=true,
+    processor=header.processor,
+  )
   result = result.put_real(
     "POINT",
     "RATE",
     header.point_rate,
     override_locked=true,
+    processor=header.processor,
   )
   result = result.set(
     "POINT",
@@ -271,8 +288,13 @@ pub fn core_parameters(
     result = result.remove("TRIAL", "ACTUAL_START_FIELD", override_locked=true)
     result = result.remove("TRIAL", "ACTUAL_END_FIELD", override_locked=true)
   }
-  result = result.put_texts("POINT", "LABELS", labels, override_locked=true)
-  result = result.put_texts(
+  result = result.put_text_series(
+    "POINT",
+    "LABELS",
+    labels,
+    override_locked=true,
+  )
+  result = result.put_text_series(
     "POINT",
     "DESCRIPTIONS",
     descriptions,
@@ -289,12 +311,14 @@ pub fn core_parameters(
     "RATE",
     header.point_rate * header.analog_subsamples.to_double(),
     override_locked=true,
+    processor=header.processor,
   )
   result = result.put_real(
     "ANALOG",
     "GEN_SCALE",
     global_scale,
     override_locked=true,
+    processor=header.processor,
   )
   result = result.put_text(
     "ANALOG",
@@ -306,29 +330,30 @@ pub fn core_parameters(
     },
     override_locked=true,
   )
-  result = result.put_texts(
+  result = result.put_text_series(
     "ANALOG",
     "LABELS",
     channels.map(c => c.label),
     override_locked=true,
   )
-  result = result.put_texts(
+  result = result.put_text_series(
     "ANALOG",
     "DESCRIPTIONS",
     channels.map(c => c.description),
     override_locked=true,
   )
-  result = result.put_texts(
+  result = result.put_text_series(
     "ANALOG",
     "UNITS",
     channels.map(c => c.unit),
     override_locked=true,
   )
-  result = result.put_reals(
+  result = result.put_real_series(
     "ANALOG",
     "SCALE",
     channels.map(c => c.scale),
     override_locked=true,
+    processor=header.processor,
   )
   let offsets = channels.map(c => {
     exact_int(
@@ -346,45 +371,78 @@ pub fn core_parameters(
       "analog offset",
     )
   })
-  result.set(
+  let result = result.put_int_series(
     "ANALOG",
-    if unsigned {
-      Parameter::unsigneds("OFFSET", offsets)
-    } else {
-      Parameter::integers("OFFSET", offsets)
-    },
+    "OFFSET",
+    offsets,
+    unsigned~,
     override_locked=true,
   )
+  retain_parameter_metadata(result, base)
+}
+
+///|
+// Preserve opaque header bytes while migrating only the defined event fields.
+fn header_without_events(header : Header) -> Bytes {
+  let reserved = header.reserved.to_array()
+  for offset in 274..<278 {
+    reserved[offset] = 0
+  }
+  for offset in 280..<370 {
+    reserved[offset] = 0
+  }
+  for offset in 372..<444 {
+    reserved[offset] = 0
+  }
+  Bytes::from_array(reserved)
 }
 
 ///|
 pub fn write(
   document : Document,
   limits~ : Limits = Limits::default(),
+  processor~ : Processor = document.header.processor,
 ) -> Bytes raise C3dError {
   validate_document(document, limits~)
   let mut parameters = write_event_parameters(
     document.parameters,
     document.events,
+    processor=document.header.processor,
   )
-  let provisional = write_parameters(parameters, limits~)
+  let provisional = write_parameters(parameters, limits~, processor~)
   let data_block = 2 + provisional.length() / 512
   parameters = parameters.set(
     "POINT",
     Parameter::unsigned("DATA_START", data_block),
     override_locked=true,
   )
-  let section = write_parameters(parameters, limits~)
+  parameters = retain_parameter_metadata(parameters, document.parameters)
+  let section = write_parameters(parameters, limits~, processor~)
   if section.length() != provisional.length() {
     raise C3dError::Invalid("parameter layout changed after DATA_START update")
   }
   let header = {
     ..document.header,
+    processor,
+    analog_subsamples: document.layout.analog_subsamples,
     parameter_block: 2,
     data_block,
-    reserved: Bytes::make(488, 0),
+    reserved: header_without_events(document.header),
   }
-  let layout = resolve_layout(header, parameters, limits~)
+  // Frame encoding must use the actual target representation of calibration
+  // and scale, including VAX values which round when converted to IEEE.
+  let header_bytes = write_header(header, limits~)
+  let header = {
+    ..header,
+    scale: encoded_f32(header_bytes, 12, processor),
+    point_rate: encoded_f32(header_bytes, 20, processor),
+  }
+  let target_parameters = read_parameters(
+    Bytes::make(512, 0) + section,
+    2,
+    limits~,
+  )
+  let layout = resolve_layout(header, target_parameters, limits~)
   let total = checked_add(
     512 + section.length(),
     checked_mul(layout.frame_bytes, layout.frame_count, "write sample bytes"),
@@ -395,7 +453,7 @@ pub fn write(
     raise C3dError::ResourceLimit("encoded file size")
   }
   let output = @buffer.Buffer::Buffer(size_hint=padded)
-  output.write_bytes(write_header(header, limits~)[:])
+  output.write_bytes(header_bytes[:])
   output.write_bytes(section[:])
   for frame in document.frames {
     output.write_bytes(encode_frame(frame, layout)[:])

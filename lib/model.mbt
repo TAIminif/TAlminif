@@ -50,8 +50,8 @@ pub fn Limits::default() -> Limits {
     max_parameters: 4096,
     max_parameter_bytes: 1024 * 1024,
     max_frames: 200_000,
-    max_points: 255,
-    max_analog_channels: 255,
+    max_points: 65535,
+    max_analog_channels: 65535,
     max_subsamples: 2048,
     max_total_values: 20_000_000,
     max_text_bytes: 1048576,
@@ -60,6 +60,7 @@ pub fn Limits::default() -> Limits {
 
 ///|
 pub(all) struct Header {
+  processor : Processor
   parameter_block : Int32
   point_count : Int32
   analog_values_per_frame : Int32
@@ -83,6 +84,7 @@ pub(all) struct Group {
 
 ///|
 pub(all) struct Parameter {
+  processor : Processor
   group_id : Int32
   name : String
   data_type : Int32
@@ -160,6 +162,7 @@ pub(all) struct Channel {
 
 ///|
 pub(all) struct Layout {
+  processor : Processor
   frame_count : Int32
   first_frame : Int32
   point_count : Int32

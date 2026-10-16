@@ -20,3 +20,36 @@ test "every structural truncation before the data boundary is rejected" {
   }
   assert_eq(@lib.Reader::new(data[0:required].to_owned()).remaining(), 3)
 }
+
+///|
+test "rebuilding and writing standard fields retain annotations and locks" {
+  let original = sample_document().with_events([@lib.Event::new(0.0, "start")])
+  let mut parameters = original.parameters
+  for
+    (group, name) in [
+      ("POINT", "DATA_START"),
+      ("POINT", "LABELS"),
+      ("ANALOG", "SCALE"),
+      ("EVENT", "USED"),
+    ] {
+    let value = parameters.require(group, name)
+    parameters = parameters.set(group, {
+      ..value,
+      locked: true,
+      description: b"annotation",
+    })
+  }
+  let source = { ..original, parameters, }
+  let changed = @lib.read(@lib.write(source.crop(0, 2), processor=@lib.Mips))
+  for
+    (group, name) in [
+      ("POINT", "DATA_START"),
+      ("POINT", "LABELS"),
+      ("ANALOG", "SCALE"),
+      ("EVENT", "USED"),
+    ] {
+    let value = changed.parameters.require(group, name)
+    assert_true(value.locked)
+    assert_eq(value.description, b"annotation")
+  }
+}

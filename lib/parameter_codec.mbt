@@ -126,8 +126,8 @@ pub fn read_parameters(
   limits~ : Limits = Limits::default(),
 ) -> Parameters raise C3dError {
   validate_limits(limits)
-  if parameter_block < 2 || parameter_block > 255 {
-    raise C3dError::Unsupported("parameter-only or invalid block layout")
+  if parameter_block < 1 || parameter_block > 255 {
+    raise C3dError::Unsupported("invalid parameter block layout")
   }
   let start = checked_mul(parameter_block - 1, 512, "parameter offset")
   check_range(data, start, 4)
@@ -135,9 +135,7 @@ pub fn read_parameters(
   if blocks < 1 {
     raise C3dError::Invalid("empty parameter section")
   }
-  if u8(data, start + 3) != 84 {
-    raise C3dError::Unsupported("only Intel IEEE processor format is supported")
-  }
+  let processor = read_processor(data, parameter_block)
   let size = checked_mul(blocks, 512, "parameter section size")
   if size > limits.max_parameter_bytes {
     raise C3dError::ResourceLimit("parameter section")
@@ -169,7 +167,7 @@ pub fn read_parameters(
       raise C3dError::Truncated("parameter record name")
     }
     let name = normalize_name(ascii(data[cursor + 2:pointer].to_owned()))
-    let jump = u16(data, pointer)
+    let jump = encoded_u16(data, pointer, processor)
     let record_end = if jump == 0 {
       end
     } else {
@@ -222,6 +220,7 @@ pub fn read_parameters(
         raise C3dError::Truncated("parameter description")
       }
       values.push({
+        processor,
         group_id,
         name,
         data_type,
@@ -251,6 +250,7 @@ fn encode_record(
   group_id : Int32,
   locked : Bool,
   payload : Bytes,
+  processor : Processor,
 ) -> Bytes raise C3dError {
   let name_bytes = ascii_bytes(normalize_name(name))
   let out = @buffer.Buffer::Buffer()
@@ -260,7 +260,7 @@ fn encode_record(
     (if group_id < 0 { 256 + group_id } else { group_id }).to_byte(),
   )
   out.write_bytes(name_bytes[:])
-  put_u16(out, payload.length() + 2)
+  put_encoded_u16(out, payload.length() + 2, processor)
   out.write_bytes(payload[:])
   out.to_bytes()
 }
@@ -269,6 +269,7 @@ fn encode_record(
 pub fn write_parameters(
   parameters : Parameters,
   limits~ : Limits = Limits::default(),
+  processor~ : Processor = Intel,
 ) -> Bytes raise C3dError {
   validate_parameters(parameters, limits~)
   let records = @buffer.Buffer::Buffer()
@@ -277,7 +278,13 @@ pub fn write_parameters(
     payload.write_byte(group.description.length().to_byte())
     payload.write_bytes(group.description[:])
     records.write_bytes(
-      encode_record(group.name, -group.id, group.locked, payload.to_bytes())[:],
+      encode_record(
+        group.name,
+        -group.id,
+        group.locked,
+        payload.to_bytes(),
+        processor,
+      )[:],
     )
   }
   for value in parameters.values {
@@ -289,7 +296,14 @@ pub fn write_parameters(
     for dimension in value.dimensions {
       payload.write_byte(dimension.to_byte())
     }
-    payload.write_bytes(value.data[:])
+    payload.write_bytes(
+      transcode_parameter_data(
+        value.data_type,
+        value.data,
+        value.processor,
+        processor,
+      )[:],
+    )
     payload.write_byte(value.description.length().to_byte())
     payload.write_bytes(value.description[:])
     records.write_bytes(
@@ -298,6 +312,7 @@ pub fn write_parameters(
         value.group_id,
         value.locked,
         payload.to_bytes(),
+        processor,
       )[:],
     )
   }
@@ -310,7 +325,7 @@ pub fn write_parameters(
   out.write_byte(0)
   out.write_byte(80)
   out.write_byte(blocks.to_byte())
-  out.write_byte(84)
+  out.write_byte(processor.processor_id().to_byte())
   out.write_bytes(records.to_bytes()[:])
   out.write_byte(0)
   out.write_byte(0)

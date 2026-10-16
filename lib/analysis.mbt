@@ -285,7 +285,8 @@ pub fn inspect_json(reader : Reader) -> Json {
   let layout = reader.layout()
   {
     "format": "C3D",
-    "processor": "Intel IEEE little-endian",
+    "processor": reader.header().processor.description(),
+    "processor_id": reader.header().processor.processor_id(),
     "storage": if layout.float_storage {
       "float32"
     } else {

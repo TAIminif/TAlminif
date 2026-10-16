@@ -180,11 +180,13 @@ def run():
     fixture(legacy, -0.25, include_events=False)
     legacy_raw = bytearray(legacy.read_bytes())
     struct.pack_into("<HH", legacy_raw, 298, 12345, 1)
-    struct.pack_into("<f", legacy_raw, 304, 1.035)
+    # Header seconds are file-relative; this trial starts at original second 1.
+    struct.pack_into("<f", legacy_raw, 304, 0.035)
     legacy_raw[376] = 1
     legacy_raw[396:400] = b"HIT "
     legacy.write_bytes(legacy_raw)
     assert cli("inspect", legacy)["events"][0]["label"] == "HIT"
+    np.testing.assert_allclose(cli("inspect", legacy)["events"][0]["time"], 1.035, atol=1e-6)
     legacy_json = folder / "legacy.json"
     cli("dump", legacy, legacy_json)
     migrated = folder / "migrated.c3d"
@@ -201,7 +203,7 @@ def run():
     assert cli("check", truncated, expected=1)["error"] == "truncated"
     dec = folder / "unsupported.c3d"
     data = bytearray(raw)
-    data[512 + 3] = 85
+    data[512 + 3] = 87
     dec.write_bytes(data)
     assert cli("inspect", dec, expected=1)["error"] == "unsupported"
     assert cli("pack", folder / "float.json", folder / "repacked-float.c3d", expected=2)["error"] == "HostIO"

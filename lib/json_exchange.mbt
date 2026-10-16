@@ -155,6 +155,7 @@ pub fn parameters_json(parameters : Parameters) -> Json {
       parameters.values.map(value => {
         (
           {
+            "processor": value.processor.name(),
             "group_id": value.group_id,
             "name": value.name,
             "data_type": value.data_type,
@@ -181,6 +182,7 @@ pub fn frame_json(frame : Frame) -> Json {
 pub fn document_json(document : Document) -> Json {
   {
     "format": "MoonC3D/1",
+    "processor": document.header.processor.name(),
     "point_labels": Json(document.layout.point_labels),
     "point_descriptions": Json(document.layout.point_descriptions),
     "point_unit": document.layout.point_unit,
@@ -226,7 +228,7 @@ pub fn parse_parameters_json(
   for parameter in parameter_values {
     ensure_keys(parameter, [
       "group_id", "name", "data_type", "dimensions", "data_hex", "description_hex",
-      "locked",
+      "locked", "processor",
     ])
     let dimensions_json = json_array(json_field(parameter, "dimensions"))
     if dimensions_json.length() > 7 {
@@ -236,6 +238,7 @@ pub fn parse_parameters_json(
       exact_int(json_number(item), 0, 255, "parameter dimension")
     })
     values.push({
+      processor: processor_from_name(string_or(parameter, "processor", "intel")),
       group_id: exact_int(
         json_number(json_field(parameter, "group_id")),
         1,
@@ -293,7 +296,7 @@ pub fn parse_event_json(value : Json) -> Event raise C3dError {
     subject: string_or(value, "subject", ""),
     icon_id: exact_int(
       number_or(value, "icon_id", 0.0),
-      0,
+      -32768,
       32767,
       "event icon ID",
     ),
@@ -322,7 +325,7 @@ pub fn parse_document_json(
   ensure_keys(value, [
     "format", "point_labels", "point_descriptions", "point_unit", "point_rate", "scale",
     "first_frame", "analog_subsamples", "analog_global_scale", "analog_unsigned",
-    "analog_channels", "frames", "events", "parameters",
+    "analog_channels", "frames", "events", "parameters", "processor",
   ])
   if string_or(value, "format", "MoonC3D/1") != "MoonC3D/1" {
     raise C3dError::Unsupported("unknown interchange format")
@@ -413,6 +416,7 @@ pub fn parse_document_json(
     analog_global_scale=number_or(value, "analog_global_scale", 1.0),
     analog_unsigned=bool_or(value, "analog_unsigned", false),
     point_unit=string_or(value, "point_unit", "mm"),
+    processor=processor_from_name(string_or(value, "processor", "intel")),
   )
   let parameters = match json_optional(value, "parameters") {
     None => base.parameters

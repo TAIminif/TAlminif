@@ -145,6 +145,7 @@ pub fn Parameter::integer(
   let out = @buffer.Buffer::Buffer()
   put_i16(out, value)
   {
+    processor: Intel,
     group_id: 1,
     name: normalize_name(name),
     data_type: 2,
@@ -163,6 +164,7 @@ pub fn Parameter::unsigned(
   let out = @buffer.Buffer::Buffer()
   put_u16(out, value)
   {
+    processor: Intel,
     group_id: 1,
     name: normalize_name(name),
     data_type: 2,
@@ -177,10 +179,12 @@ pub fn Parameter::unsigned(
 pub fn Parameter::real(
   name : String,
   value : Double,
+  processor~ : Processor = Intel,
 ) -> Parameter raise C3dError {
   let out = @buffer.Buffer::Buffer()
-  put_f32(out, value)
+  put_encoded_f32(out, value, processor)
   {
+    processor,
     group_id: 1,
     name: normalize_name(name),
     data_type: 4,
@@ -202,6 +206,7 @@ pub fn Parameter::integers(
     put_i16(out, value)
   }
   let result = {
+    processor: Intel,
     group_id: 1,
     name: normalize_name(name),
     data_type: 2,
@@ -225,6 +230,7 @@ pub fn Parameter::unsigneds(
     put_u16(out, value)
   }
   let result = {
+    processor: Intel,
     group_id: 1,
     name: normalize_name(name),
     data_type: 2,
@@ -242,12 +248,14 @@ pub fn Parameter::reals(
   name : String,
   values : Array[Double],
   dimensions~ : Array[Int32] = [values.length()],
+  processor~ : Processor = Intel,
 ) -> Parameter raise C3dError {
   let out = @buffer.Buffer::Buffer()
   for value in values {
-    put_f32(out, value)
+    put_encoded_f32(out, value, processor)
   }
   let result = {
+    processor,
     group_id: 1,
     name: normalize_name(name),
     data_type: 4,
@@ -270,6 +278,7 @@ pub fn Parameter::text(
     raise C3dError::ResourceLimit("text parameter width exceeds uint8")
   }
   {
+    processor: Intel,
     group_id: 1,
     name: normalize_name(name),
     data_type: -1,
@@ -304,6 +313,7 @@ pub fn Parameter::texts(
     }
   }
   {
+    processor: Intel,
     group_id: 1,
     name: normalize_name(name),
     data_type: -1,
@@ -331,9 +341,9 @@ pub fn Parameter::int_values(
       for i in 0..<count {
         values.push(
           if unsigned {
-            u16(self.data, i * 2)
+            encoded_u16(self.data, i * 2, self.processor)
           } else {
-            i16(self.data, i * 2)
+            encoded_i16(self.data, i * 2, self.processor)
           },
         )
       }
@@ -350,7 +360,7 @@ pub fn Parameter::real_values(self : Parameter) -> Array[Double] raise C3dError 
   }
   let values : Array[Double] = []
   for i in 0..<element_count(self.dimensions) {
-    let value = f32(self.data, i * 4)
+    let value = encoded_f32(self.data, i * 4, self.processor)
     if !finite(value) {
       raise C3dError::Invalid("non-finite numeric parameter")
     }
@@ -447,8 +457,9 @@ pub fn Parameters::put_real(
   name : String,
   value : Double,
   override_locked~ : Bool = false,
+  processor~ : Processor = Intel,
 ) -> Parameters raise C3dError {
-  self.set(group, Parameter::real(name, value), override_locked~)
+  self.set(group, Parameter::real(name, value, processor~), override_locked~)
 }
 
 ///|
@@ -480,8 +491,9 @@ pub fn Parameters::put_reals(
   name : String,
   values : Array[Double],
   override_locked~ : Bool = false,
+  processor~ : Processor = Intel,
 ) -> Parameters raise C3dError {
-  self.set(group, Parameter::reals(name, values), override_locked~)
+  self.set(group, Parameter::reals(name, values, processor~), override_locked~)
 }
 
 ///|
@@ -528,4 +540,24 @@ pub fn optional_text(
       texts[0]
     }
   }
+}
+
+///|
+// Rebuilt standard fields keep the original annotation and UI lock flag.
+fn retain_parameter_metadata(
+  parameters : Parameters,
+  source : Parameters,
+) -> Parameters {
+  let previous : Map[String, Parameter] = Map([])
+  for value in source.values {
+    previous["\{value.group_id}:" + value.name] = value
+  }
+  let values = parameters.values.map(value => {
+    match previous.get("\{value.group_id}:" + value.name) {
+      None => value
+      Some(old) =>
+        { ..value, description: old.description, locked: old.locked, }
+    }
+  })
+  { ..parameters, values, }
 }

@@ -14,11 +14,11 @@ pub fn decode_frame(
   let magnitude = layout.point_scale.abs()
   for _ in 0..<layout.point_count {
     let (x, y, z, packed) = if layout.float_storage {
-      let x = f32(data, cursor)
-      let y = f32(data, cursor + 4)
-      let z = f32(data, cursor + 8)
+      let x = encoded_f32(data, cursor, layout.processor)
+      let y = encoded_f32(data, cursor + 4, layout.processor)
+      let z = encoded_f32(data, cursor + 8, layout.processor)
       let packed = exact_int(
-        f32(data, cursor + 12),
+        encoded_f32(data, cursor + 12, layout.processor),
         -32768,
         32767,
         "point residual/mask word",
@@ -26,10 +26,13 @@ pub fn decode_frame(
       cursor = cursor + 16
       (x, y, z, packed)
     } else {
-      let x = i16(data, cursor).to_double() * magnitude
-      let y = i16(data, cursor + 2).to_double() * magnitude
-      let z = i16(data, cursor + 4).to_double() * magnitude
-      let packed = i16(data, cursor + 6)
+      let x = encoded_i16(data, cursor, layout.processor).to_double() *
+        magnitude
+      let y = encoded_i16(data, cursor + 2, layout.processor).to_double() *
+        magnitude
+      let z = encoded_i16(data, cursor + 4, layout.processor).to_double() *
+        magnitude
+      let packed = encoded_i16(data, cursor + 6, layout.processor)
       cursor = cursor + 8
       (x, y, z, packed)
     }
@@ -68,14 +71,14 @@ pub fn decode_frame(
   for _ in 0..<layout.analog_subsamples {
     for channel_index in 0..<channels {
       let raw = if layout.float_storage {
-        let value = f32(data, cursor)
+        let value = encoded_f32(data, cursor, layout.processor)
         cursor = cursor + 4
         value
       } else {
         let value = if layout.analog_unsigned {
-          u16(data, cursor)
+          encoded_u16(data, cursor, layout.processor)
         } else {
-          i16(data, cursor)
+          encoded_i16(data, cursor, layout.processor)
         }
         cursor = cursor + 2
         value.to_double()
@@ -166,21 +169,30 @@ pub fn encode_frame(frame : Frame, layout : Layout) -> Bytes raise C3dError {
     }
     if layout.float_storage {
       for value in [point.x, point.y, point.z] {
-        put_f32(out, if point.valid { value } else { 0.0 })
+        put_encoded_f32(
+          out,
+          if point.valid {
+            value
+          } else {
+            0.0
+          },
+          layout.processor,
+        )
       }
-      put_f32(out, packed.to_double())
+      put_encoded_f32(out, packed.to_double(), layout.processor)
     } else {
       for coordinate in [point.x, point.y, point.z] {
-        put_i16(
+        put_encoded_i16(
           out,
           if point.valid {
             round_int(coordinate / magnitude, -32768, 32767, "coordinate")
           } else {
             0
           },
+          layout.processor,
         )
       }
-      put_i16(out, packed)
+      put_encoded_i16(out, packed, layout.processor)
     }
   }
   for sample in 0..<layout.analog_subsamples {
@@ -190,11 +202,19 @@ pub fn encode_frame(frame : Frame, layout : Layout) -> Bytes raise C3dError {
       let raw = physical / (channel.scale * layout.analog_global_scale) +
         channel.offset
       if layout.float_storage {
-        put_f32(out, raw)
+        put_encoded_f32(out, raw, layout.processor)
       } else if layout.analog_unsigned {
-        put_u16(out, round_int(raw, 0, 65535, "unsigned analog sample"))
+        put_encoded_u16(
+          out,
+          round_int(raw, 0, 65535, "unsigned analog sample"),
+          layout.processor,
+        )
       } else {
-        put_i16(out, round_int(raw, -32768, 32767, "analog sample"))
+        put_encoded_i16(
+          out,
+          round_int(raw, -32768, 32767, "analog sample"),
+          layout.processor,
+        )
       }
     }
   }
