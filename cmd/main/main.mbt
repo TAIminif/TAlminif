@@ -22,7 +22,7 @@ extern "js" fn fail(text : String, code : Int32) -> Unit = "(text, code) => glob
 
 ///|
 let help : String =
-  #|MoonC3D 0.2.1 — C3D motion-capture tools
+  #|MoonC3D 0.2.2 — C3D motion-capture tools
   #|Usage: node bin/moonc3d.mjs COMMAND ...
   #|  inspect INPUT                     metadata as JSON
   #|  check INPUT                       validate metadata and every frame

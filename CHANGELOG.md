@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased — final review reproducibility
+## 0.2.2
+
+- Preserve each numbered ANALOG GAIN/RANGE parameter's own description and lock flag after channel selection; retain selected numeric payloads and their processor encoding.
+- Add a regression covering unchanged selection, cross-segment reordering and reduced channel lists, including file round trips.
+
+## Final review reproducibility (0.2.1 baseline)
 
 - Preserve fractional-rate and exact-time independent verification as a runnable script with 48 separately counted cases.
 - Verify the public API from a separate MoonBit module using tracked fixtures and a generated source workspace.

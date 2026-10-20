@@ -213,6 +213,70 @@ test "reordering 256 channels repartitions every auxiliary vector at the boundar
 }
 
 ///|
+test "analog auxiliary segment annotations survive selection and reordering" {
+  let original = multichannel_document(true, false)
+  let mut parameters = original.parameters
+  for
+    (name, description, locked) in [
+      ("GAIN", "gain first", false),
+      ("GAIN2", "gain second", true),
+      ("GAIN3", "gain third", true),
+      ("RANGE", "range first", true),
+      ("RANGE2", "range second", false),
+      ("RANGE3", "range third", false),
+    ] {
+    parameters = parameters.set("ANALOG", {
+      ..parameters.require("ANALOG", name),
+      description: @lib.utf8_bytes(description),
+      locked,
+    })
+  }
+  let original = { ..original, parameters, }
+  for
+    indices in [
+      Array::makei(511, index => index),
+      Array::makei(256, index => 510 - index),
+    ] {
+    let selected = original.select_analog(indices)
+    for processor in [@lib.Intel, @lib.Dec, @lib.Mips] {
+      let decoded = @lib.read(@lib.write(selected, processor~))
+      for result in [selected, decoded] {
+        for name in ["GAIN", "GAIN2", "GAIN3", "RANGE", "RANGE2", "RANGE3"] {
+          let expected = original.parameters.require("ANALOG", name)
+          match result.parameters.get("ANALOG", name) {
+            Some(value) => {
+              assert_eq(value.description, expected.description)
+              assert_eq(value.locked, expected.locked)
+            }
+            None => assert_eq(indices.length(), 256)
+          }
+        }
+        assert_eq(
+          result.parameters.read_int_series("ANALOG", "GAIN", indices.length()),
+          indices.map(index => index % 8 + 1),
+        )
+        assert_eq(
+          result.parameters.read_real_series(
+            "ANALOG",
+            "RANGE",
+            indices.length(),
+          ),
+          indices.map(index => (index + 1).to_double() * 0.25),
+        )
+        assert_eq(
+          result.frames[0].analog,
+          indices.map(index => original.frames[0].analog[index]),
+        )
+      }
+      assert_eq(
+        decoded.parameters.require("ANALOG", "RANGE2").processor,
+        processor,
+      )
+    }
+  }
+}
+
+///|
 test "channel times subsamples must remain within the uint16 header field" {
   let original = multichannel_document(true, false)
   expect_error(() => {

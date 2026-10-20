@@ -289,7 +289,7 @@ fn select_analog_auxiliary(
       })
     }
   }
-  result
+  retain_parameter_metadata(result, source)
 }
 
 ///|

@@ -8,11 +8,11 @@ MoonC3D 是用 MoonBit 编写的 C3D 动作捕捉文件工具库。它将三维�
 
 作者：郭康泰；GitHub：[TAIminif](https://github.com/TAIminif)。
 
-终审复现入口：[要求、功能与证据对照](docs/FINAL_REVIEW.md)和[最新工程验证摘要](docs/VERIFICATION-20261020.json)。其中分别列出已验证的工程交付、仍待完成的注册表发布要求，以及由参赛者自行处理的终验提交。
+终审复现入口：[要求、功能与证据对照](docs/FINAL_REVIEW.md)和[最新工程验证摘要](docs/VERIFICATION-0.2.2.json)。其中分别列出已验证的工程交付、仍待完成的注册表发布要求，以及由参赛者自行处理的终验提交。
 
 ## 支持范围
 
-| 功能 | 0.2.1 范围 |
+| 功能 | 0.2.2 范围 |
 | --- | --- |
 | 二进制文件 | Intel/IEEE、DEC/VAX、SGI/MIPS 三种编码，512 字节块，int16 或 float32 点存储 |
 | 标记点 | XYZ、残差、7 位相机掩码、缺失点；支持 LABELS/LABELS2/LABELS3 等连续分段 |
@@ -45,7 +45,7 @@ moon run examples/memory
 
 ```text
 import {
-  "TAIminif/TAlminif@0.2.1",
+  "TAIminif/TAlminif@0.2.2",
 }
 ```
 

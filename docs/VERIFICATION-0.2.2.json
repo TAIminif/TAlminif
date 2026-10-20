@@ -1,0 +1,61 @@
+{
+  "version": "0.2.2",
+  "checked_date": "2026-10-20",
+  "scope": "engineering verification; not an organizer acceptance decision",
+  "base_commit": "c37aaa123bd77bf191e09d9fe80defadcbfba669",
+  "fix": {
+    "source": "lib/edit.mbt",
+    "regression": "lib/multichannel_test.mbt",
+    "description": "Retain each same-named ANALOG GAIN/RANGE segment's description and lock flag after channel selection without restoring old numeric data or processor metadata.",
+    "coverage": ["unchanged 511-channel selection", "cross-segment reversed selection reduced to 256 channels", "numeric and analog-sample preservation", "Intel/DEC/MIPS file round trips"],
+    "old_implementation_with_new_test": "failed as expected with GAIN2 description mismatch; exit code 2",
+    "fixed_implementation": "passed"
+  },
+  "local_verification": {
+    "result": "passed",
+    "entry_point": "pwsh -File scripts/verify.ps1 -Python <Python3.11 executable>",
+    "workspace": "existing workspace; fresh reports; installed toolchain, Python dependencies and hash-verified official fixture cache reused",
+    "toolchain": {"moon": "0.1.20261012", "moonc": "v0.10.15+943464bfa"},
+    "python": "3.11.9",
+    "dependencies": {"c3d": "0.6.0", "numpy": "2.2.6"},
+    "backends": ["wasm-gc", "wasm", "js"],
+    "tests_per_backend": 83,
+    "native": "executed by GitHub CI; inspect the delivered commit's corresponding run",
+    "format_checks_build_example": "passed",
+    "log": "artifacts/final-verification-0.2.2.log"
+  },
+  "source_count": {
+    "method": "nonblank noncomment physical .mbt lines; generated interfaces and dependencies excluded",
+    "totals": {"production": 5233, "tests": 2063, "examples": 14}
+  },
+  "independent_interoperability": {"result": "passed", "script": "scripts/interop.py", "oracle": "py-c3d 0.6.0"},
+  "compatibility": {
+    "result": "passed",
+    "cases": 21,
+    "synthetic": 9,
+    "unaltered_official": 10,
+    "explicitly_repaired_official": 2,
+    "independently_decoded_transcode_outputs": 54,
+    "note": "Two malformed Sample02 MIPS originals remain rejected; repaired copies are explicitly identified with before/after hashes.",
+    "script": "scripts/compatibility_cases.py --download-official"
+  },
+  "independent_review_regressions": {
+    "result": "passed",
+    "passed_cases": 48,
+    "fractional_rate_configurations": 36,
+    "half_open_time_crop_configurations": 12,
+    "defined_marker_samples_checked": 2232,
+    "analog_samples_checked": 21546,
+    "oracles": ["independent Python wire decoder", "predefined physical-value equations", "explicit original frame-index lists"],
+    "script": "scripts/review_regressions.py",
+    "counting": "separate from the 83 core tests, 21 compatibility cases and 54 transcode outputs"
+  },
+  "external_module_consumer": {"result": "passed", "target": "js", "processors": ["intel", "dec", "mips"], "point_rate_hz": 59.94, "analog_subsamples": 3, "script": "scripts/verify_consumer.py"},
+  "local_source_package": {"result": "passed", "check_script": "scripts/check_package.py", "commands": ["moon package --list", "moon package", "python scripts/check_package.py"], "publication": "not executed; local packaging does not satisfy registry publication"},
+  "official_scope": {
+    "source": "https://github.com/moonbitlang/Hackathon2026/blob/main/src/App.tsx",
+    "charter": "https://bxup9uklfcb.feishu.cn/wiki/Dx4Bwd6D1i3GfHkajQCcF7SznEd",
+    "registry_publication_requirement": "pending publication or explicit organizer exemption",
+    "final_submission": "participant handles submission according to the notice they received"
+  }
+}
