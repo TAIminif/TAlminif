@@ -1,0 +1,5 @@
+import {
+  "@MODULE@/lib" @c3d,
+}
+
+pkgtype(kind: "executable")

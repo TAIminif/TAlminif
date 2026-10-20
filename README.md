@@ -8,6 +8,8 @@ MoonC3D 是用 MoonBit 编写的 C3D 动作捕捉文件工具库。它将三维�
 
 作者：郭康泰；GitHub：[TAIminif](https://github.com/TAIminif)。
 
+终审复现入口：[要求、功能与证据对照](docs/FINAL_REVIEW.md)和[最新工程验证摘要](docs/VERIFICATION-20261020.json)。其中分别列出已验证的工程交付、仍待完成的注册表发布要求，以及由参赛者自行处理的终验提交。
+
 ## 支持范围
 
 | 功能 | 0.2.1 范围 |
@@ -62,6 +64,8 @@ import {
 ```
 
 然后从应用模块目录运行构建或测试。工作区依赖使用本地源码，配置说明见[官方模块依赖文档](https://docs.moonbitlang.com/zh-cn/latest/toolchain/moon/module.html)。
+
+可运行 `python scripts/verify_consumer.py` 自动创建独立模块，从公开 API 验证三编码、小数采样率和时间裁剪。模板随仓库保存于 [scripts/fixtures/source-consumer](scripts/fixtures/source-consumer)，生成的工作区及 `result.json` 保留在 `artifacts/source-consumer-*/`。
 
 ## 三个可复现使用流程
 
@@ -136,12 +140,20 @@ let statistics = @c3d.analyze(reader)
 moon test --target wasm-gc
 moon test --target wasm
 moon test --target js
+moon build --target js --release
 python -m pip install -r requirements-test.txt
 python scripts/interop.py
 python scripts/compatibility_cases.py --download-official
+python scripts/review_regressions.py
+python scripts/verify_consumer.py
 python scripts/count_code.py
+moon package --list
+moon package
+python scripts/check_package.py
 ```
 
 独立脚本用 `py-c3d 0.6.0` 生成整数和浮点试验，双向比较点数据、残差、相机掩码、通道校准、元数据、裁剪/选择/转换结果，检查统计值、CSV 时间及错误退出。跨编码脚本另下载并校验官方 Sample01、Sample02 的 SHA-256，逐帧对照10个未经修改的有效原件、2个明确修正的副本及各目标编码输出；两个畸形原件的报错与前后哈希另行保留。合成511点/511模拟通道案例独立核对文件字节、校准值和跨分段编辑。报告与合成数据留在被 Git 忽略的 `artifacts/`，官方数据留在 `.tools/compatibility/`，不随 MIT 源码重新分发。Python 只用于验证。
+
+`review_regressions.py` 额外逐样本验证48个小数率及时间边界案例，使用独立字节解码器，输出 `artifacts/review-regressions-*/report.json`；这48例单列，不计入原有21个兼容案例或54个转换输出。CI同时执行这些脚本、独立模块消费验证和本地打包检查，归档报告、文件清单及源码包。`moon package` 只生成本地包，不执行注册表发布；`--list` 仅列文件，随后实际打包并运行 `check_package.py`，核对必需源码、许可证、CRC及排除本机目录。
 
 实现依据 [C3D 官方指南](https://www.c3d.org/docs/C3D_User_Guide.pdf)，独立编写 MoonBit 实现；[py-c3d](https://github.com/EmbodiedCognition/py-c3d) 仅为外部对照工具，未复制其源码。来源许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，生态查重范围见 [UNIQUENESS.md](docs/UNIQUENESS.md)。

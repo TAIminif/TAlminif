@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — final review reproducibility
+
+- Preserve fractional-rate and exact-time independent verification as a runnable script with 48 separately counted cases.
+- Verify the public API from a separate MoonBit module using tracked fixtures and a generated source workspace.
+- Run both checks in CI and the local verification entry point, and archive their reports with a locally checked source package.
+- Generate the source archive after listing files; reject empty archives, missing reproduction files and excluded local state, and verify CRC and package metadata.
+- Add an official-requirements and evidence map for final review; distinguish engineering evidence from pending registry publication and submission instructions.
+
 ## 0.2.1
 
 - Correct decimal time crops and timestamp-to-frame lookup using the same frame-time grid, including high trial frame numbers.

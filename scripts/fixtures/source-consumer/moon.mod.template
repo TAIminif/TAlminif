@@ -1,0 +1,7 @@
+name = "audit/moonc3d-consumer"
+
+version = "0.1.0"
+
+import {
+  "@MODULE@@@VERSION@",
+}

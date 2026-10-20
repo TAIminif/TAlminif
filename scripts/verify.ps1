@@ -29,14 +29,26 @@ try {
     }
     moon run examples/memory
     if ($LASTEXITCODE -ne 0) { throw 'Example failed' }
+    moon build --target js --release
+    if ($LASTEXITCODE -ne 0) { throw 'JavaScript CLI build failed' }
     & $Python -X utf8 scripts/interop.py
     if ($LASTEXITCODE -ne 0) { throw 'Interoperability failed' }
     & $Python -X utf8 scripts/compatibility_cases.py --download-official
     if ($LASTEXITCODE -ne 0) { throw 'Cross-encoding compatibility failed' }
+    & $Python -X utf8 scripts/review_regressions.py
+    if ($LASTEXITCODE -ne 0) { throw 'Independent precision regressions failed' }
+    & $Python -X utf8 scripts/verify_consumer.py
+    if ($LASTEXITCODE -ne 0) { throw 'External public API consumer failed' }
     $codeMetrics = & $Python -X utf8 scripts/count_code.py
     if ($LASTEXITCODE -ne 0) { throw 'Code count failed' }
     $codeMetrics | Set-Content -LiteralPath 'artifacts\code-count.json' -Encoding utf8
     ($codeMetrics -join "`n" | ConvertFrom-Json).totals | Format-Table
+    moon package --list | Set-Content -LiteralPath 'artifacts\package-manifest.txt' -Encoding utf8
+    if ($LASTEXITCODE -ne 0) { throw 'Source package file listing failed' }
+    moon package
+    if ($LASTEXITCODE -ne 0) { throw 'Source packaging failed' }
+    & $Python -X utf8 scripts/check_package.py
+    if ($LASTEXITCODE -ne 0) { throw 'Source archive integrity check failed' }
 } finally {
     $env:MOON_HOME = $savedMoonHome
     $env:PATH = $savedPath

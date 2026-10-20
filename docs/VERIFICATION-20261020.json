@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-20",
+  "version": "0.2.1",
+  "scope": "final-review engineering evidence; not an organizer acceptance decision",
+  "initial_review": "passed according to the participant-provided organizer notice",
+  "core_source_basis": "c48b07b9e3ece5be0008b3f293ab5f39a18a319e",
+  "core_implementation_changes_in_this_update": false,
+  "local_verification": {
+    "clean_source_copy": true,
+    "copied_local_builds_tool_cache_or_previous_reports": false,
+    "toolchain": {
+      "moon": "0.1.20261012",
+      "moonc": "v0.10.15+943464bfa"
+    },
+    "python": "3.11.9",
+    "dependencies": {
+      "c3d": "0.6.0",
+      "numpy": "2.2.6"
+    },
+    "backends": [
+      "wasm-gc",
+      "wasm",
+      "js"
+    ],
+    "tests_per_backend": 82,
+    "native": "run by the GitHub CI of the delivered commit; not run locally",
+    "checks_build_example": "passed",
+    "entry_point": "pwsh -File scripts/verify.ps1 -Python <Python3.11 executable>"
+  },
+  "source_count": {
+    "method": "nonblank noncomment physical .mbt lines; generated interfaces excluded",
+    "totals": {
+      "production": 5233,
+      "tests": 2001,
+      "examples": 14
+    }
+  },
+  "compatibility": {
+    "result": "passed",
+    "cases": 21,
+    "unaltered_official": 10,
+    "explicitly_repaired_official": 2,
+    "independently_decoded_transcode_outputs": 54,
+    "script": "scripts/compatibility_cases.py --download-official",
+    "note": "Two malformed Sample02 MIPS originals are intentionally rejected; only identified repaired copies pass."
+  },
+  "independent_review_regressions": {
+    "result": "passed",
+    "passed_cases": 48,
+    "fractional_rate_configurations": 36,
+    "half_open_time_crop_configurations": 12,
+    "defined_marker_samples_checked": 2232,
+    "analog_samples_checked": 21546,
+    "oracles": [
+      "independent Python struct/VAX-F WireReader from scripts/compatibility_cases.py",
+      "predefined frame/channel/sample equations and exact binary calibration",
+      "explicit original frame-index lists for half-open time crops"
+    ],
+    "script": "scripts/review_regressions.py",
+    "counting": "separate from the 21 compatibility cases and 54 transcode outputs"
+  },
+  "external_module_consumer": {
+    "result": "passed",
+    "target": "js",
+    "processors": [
+      "intel",
+      "dec",
+      "mips"
+    ],
+    "point_rate_hz": 59.94,
+    "analog_subsamples": 3,
+    "source": "scripts/fixtures/source-consumer/",
+    "script": "scripts/verify_consumer.py",
+    "registry_login_or_publication_needed_for_this_source_test": false
+  },
+  "local_source_package": {
+    "populated_archive_and_crc_check": "passed",
+    "empty_archive_rejection": "passed",
+    "check_script": "scripts/check_package.py",
+    "commands": [
+      "moon package --list",
+      "moon package",
+      "python scripts/check_package.py"
+    ],
+    "publication": "not executed; local packaging does not satisfy registry publication"
+  },
+  "official_scope": {
+    "source": "https://github.com/moonbitlang/Hackathon2026/blob/main/src/App.tsx",
+    "charter": "https://bxup9uklfcb.feishu.cn/wiki/Dx4Bwd6D1i3GfHkajQCcF7SznEd",
+    "registry_publication_requirement": "pending publication or explicit organizer exemption",
+    "final_submission": "participant handles submission according to the notice they received"
+  }
+}

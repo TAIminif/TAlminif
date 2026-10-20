@@ -1,0 +1,44 @@
+///|
+fn main {
+  try {
+    let frames : Array[@c3d.Frame] = Array::makei(30, index => {
+      number: index + 1,
+      points: [@c3d.Marker::new(index.to_double(), 0.0, 0.0)],
+      analog: [[
+        (index * 3).to_double(),
+        (index * 3 + 1).to_double(),
+        (index * 3 + 2).to_double(),
+      ]],
+    })
+    let document = @c3d.Document::new(
+      ["Marker"],
+      [{ label: "A1", description: "", unit: "V", scale: 1.0, offset: 0.0, }],
+      frames,
+      point_rate=59.94,
+      analog_subsamples=3,
+    )
+    for processor in [@c3d.Intel, @c3d.Dec, @c3d.Mips] {
+      let restored = @c3d.read(@c3d.write(document, processor~))
+      if restored.layout.analog_subsamples != 3 ||
+        restored.frames[29].analog != [[87.0, 88.0, 89.0]] {
+        abort("public API analog roundtrip failed")
+      }
+      for index in 0..<30 {
+        if restored.layout.index_at(restored.layout.time_at(index)) != index {
+          abort("public API frame time roundtrip failed")
+        }
+      }
+      let cropped = restored.crop_time(
+        restored.layout.time_at(7),
+        restored.layout.time_at(9),
+      )
+      if cropped.frames.map(frame => frame.points[0].x) != [7.0, 8.0] {
+        abort("public API time crop failed")
+      }
+      println("\{processor.name()}: public API encoding/time/crop passed")
+    }
+    println("MoonC3D external consumer PASS")
+  } catch {
+    error => abort(error.message())
+  }
+}
